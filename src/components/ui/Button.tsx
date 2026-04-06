@@ -71,11 +71,15 @@ export function Button({
   return (
     <button
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={buttonStyles({ variant, size, fullWidth, className })}
       {...props}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          <span className="sr-only">처리 중...</span>
+        </>
       ) : (
         children
       )}

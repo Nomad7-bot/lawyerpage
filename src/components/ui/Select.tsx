@@ -7,7 +7,7 @@ type SelectOption = { label: string; value: string };
 
 type SelectProps = {
   label?: string;
-  options: SelectOption[];
+  options: readonly SelectOption[];
   placeholder?: string;
   error?: string;
   helperText?: string;

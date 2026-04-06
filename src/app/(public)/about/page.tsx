@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
+import { AboutHeroBanner } from "@/components/sections/AboutHeroBanner";
+import { AboutVisionSection } from "@/components/sections/AboutVisionSection";
+import { AboutStatsSection } from "@/components/sections/AboutStatsSection";
+import { AboutHistoryTimeline } from "@/components/sections/AboutHistoryTimeline";
+import { AboutCTASection } from "@/components/sections/AboutCTASection";
 
 export const metadata: Metadata = {
-  title: "소개",
-  description: "법률사무소 소개 및 비전을 안내합니다.",
+  title: "사무소 소개",
+  description:
+    "신뢰와 전문성으로 30년, 법률사무소의 비전과 연혁을 소개합니다. 5명의 전문 변호사가 의뢰인의 권리를 지켜드립니다.",
+  openGraph: {
+    title: "사무소 소개",
+    description:
+      "신뢰와 전문성으로 30년, 법률사무소의 비전과 연혁을 소개합니다.",
+  },
 };
 
 export default function AboutPage() {
   return (
-    <main className="container-content py-16 sm:py-24">
-      <h1 className="text-h1 font-bold text-primary">소개</h1>
-      <p className="mt-4 text-body text-text-sub">
-        법률사무소 소개 및 비전 페이지입니다. 준비 중입니다.
-      </p>
+    <main>
+      <AboutHeroBanner />
+      <AboutVisionSection />
+      <AboutStatsSection />
+      <AboutHistoryTimeline />
+      <AboutCTASection />
     </main>
   );
 }
