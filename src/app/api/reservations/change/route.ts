@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { changeReservationSchema } from "@/lib/schemas/reservation";
+import { sendEmail } from "@/lib/email";
+import { sendSMS } from "@/lib/sms";
+import { buildAdminChangedEmail } from "@/lib/email-templates";
+import { SITE } from "@/constants/site";
+
+type ExistingReservation = {
+  id: string;
+  status: string;
+  attorney_id: string | null;
+  reservation_no: string;
+  client_name: string;
+  preferred_date: string;
+  preferred_time: string;
+};
 
 /**
  * POST /api/reservations/change — 일정 변경
@@ -13,8 +27,10 @@ export async function POST(request: NextRequest) {
     const parsed = changeReservationSchema.safeParse(body);
 
     if (!parsed.success) {
+      const details = parsed.error.flatten().fieldErrors;
+      console.error("[Change] 검증 실패:", { body, details });
       return NextResponse.json(
-        { error: "입력값이 올바르지 않습니다", details: parsed.error.flatten().fieldErrors },
+        { error: "입력값이 올바르지 않습니다", details },
         { status: 400 }
       );
     }
@@ -23,13 +39,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 1. 예약 조회
+    // 1. 예약 조회 (알림용 기존 일시 포함)
     const { data: reservation, error: findError } = await supabase
       .from("reservations")
-      .select("id, status, attorney_id")
+      .select("id, status, attorney_id, reservation_no, client_name, preferred_date, preferred_time")
       .eq("reservation_no", reservation_no)
       .eq("client_phone", client_phone)
-      .single();
+      .single<ExistingReservation>();
 
     if (findError || !reservation) {
       return NextResponse.json(
@@ -95,6 +111,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 5. 관리자 알림 (기존 일시 + 신규 일시)
+    await notifyAdminChanged({
+      reservation_no: reservation.reservation_no,
+      client_name: reservation.client_name,
+      old_date: reservation.preferred_date,
+      old_time: reservation.preferred_time,
+      new_date,
+      new_time,
+    });
+
     return NextResponse.json({
       data: {
         reservation_no: updated.reservation_no,
@@ -108,5 +134,38 @@ export async function POST(request: NextRequest) {
       { error: "서버 오류가 발생했습니다" },
       { status: 500 }
     );
+  }
+}
+
+async function notifyAdminChanged(params: {
+  reservation_no: string;
+  client_name: string;
+  old_date: string;
+  old_time: string;
+  new_date: string;
+  new_time: string;
+}): Promise<void> {
+  const email = buildAdminChangedEmail(params);
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.error("[Notify] ADMIN_EMAIL 미설정 — 관리자 변경 이메일 생략");
+  } else {
+    try {
+      await sendEmail(adminEmail, email.subject, email.html);
+    } catch (e) {
+      console.error("[Notify] 관리자 변경 이메일 예외:", e);
+    }
+  }
+
+  try {
+    const oldShort = params.old_time.slice(0, 5);
+    const newShort = params.new_time.slice(0, 5);
+    await sendSMS(
+      SITE.nap.phone,
+      `[${SITE.name}] 일정 변경 ${params.reservation_no} / ${params.old_date} ${oldShort} → ${params.new_date} ${newShort}`
+    );
+  } catch (e) {
+    console.error("[Notify] 관리자 변경 SMS Mock 예외:", e);
   }
 }

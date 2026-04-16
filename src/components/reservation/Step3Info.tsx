@@ -7,18 +7,22 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
-import { formatDateTimeKo, generateReservationNumber } from "@/lib/utils/date";
+import { formatDateTimeKo } from "@/lib/utils/date";
 import {
   reservationFormSchema,
   type ReservationFormErrors,
 } from "@/lib/schemas/reservation";
 import { useReservationStore } from "@/store/reservationStore";
-import { ATTORNEYS } from "@/constants/dummy";
-import { TOPIC_OPTIONS } from "@/constants/topics";
+import {
+  useAttorneys,
+  usePracticeAreas,
+  useCreateReservation,
+} from "@/hooks/useReservation";
 
 export function Step3Info() {
   const {
     selectedAttorneySlug,
+    selectedAttorneyId,
     selectedDate,
     selectedTime,
     formData,
@@ -27,11 +31,17 @@ export function Step3Info() {
     setReservationNumber,
   } = useReservationStore();
 
-  const [errors, setErrors] = useState<ReservationFormErrors>({});
+  const { data: attorneys } = useAttorneys();
+  const { data: practiceAreas } = usePracticeAreas();
+  const createReservation = useCreateReservation();
 
+  const [errors, setErrors] = useState<ReservationFormErrors>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // 변호사명 resolve
   const attorney =
-    selectedAttorneySlug && selectedAttorneySlug !== "any"
-      ? ATTORNEYS.find((a) => a.slug === selectedAttorneySlug)
+    selectedAttorneySlug && attorneys
+      ? attorneys.find((a) => a.slug === selectedAttorneySlug)
       : null;
 
   const attorneyLabel = attorney
@@ -42,6 +52,10 @@ export function Step3Info() {
     selectedDate && selectedTime
       ? formatDateTimeKo(selectedDate, selectedTime)
       : "";
+
+  // 상담분야 Select 옵션
+  const topicOptions =
+    practiceAreas?.map((pa) => ({ value: pa.id, label: pa.name })) ?? [];
 
   // 로컬 폼 상태 (스토어 formData 반영)
   const [localForm, setLocalForm] = useState({
@@ -58,10 +72,10 @@ export function Step3Info() {
     value: string | boolean
   ) {
     setLocalForm((prev) => ({ ...prev, [field]: value }));
-    // 해당 필드 에러 제거
     if (errors[field as keyof ReservationFormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
+    if (apiError) setApiError(null);
   }
 
   function handleSubmit() {
@@ -80,10 +94,30 @@ export function Step3Info() {
       return;
     }
 
-    // 검증 통과 → 스토어 저장 + 예약번호 생성 + 다음 단계
-    setFormData({ ...localForm, agreePrivacy: true });
-    setReservationNumber(generateReservationNumber());
-    setStep(4);
+    setApiError(null);
+
+    createReservation.mutate(
+      {
+        attorney_id: selectedAttorneyId ?? undefined,
+        client_name: localForm.name,
+        client_phone: localForm.phone,
+        client_email: localForm.email,
+        practice_area_id: localForm.topic,
+        consultation_note: localForm.content || undefined,
+        preferred_date: selectedDate!,
+        preferred_time: selectedTime!,
+      },
+      {
+        onSuccess: (data) => {
+          setFormData({ ...localForm, agreePrivacy: true });
+          setReservationNumber(data.reservation_no);
+          setStep(4);
+        },
+        onError: (err) => {
+          setApiError(err.message);
+        },
+      }
+    );
   }
 
   return (
@@ -126,6 +160,7 @@ export function Step3Info() {
             onChange={(e) => handleChange("name", e.target.value)}
             error={errors.name}
             autoComplete="name"
+            disabled={createReservation.isPending}
           />
           <Input
             label="연락처 *"
@@ -135,6 +170,7 @@ export function Step3Info() {
             error={errors.phone}
             inputMode="tel"
             autoComplete="tel"
+            disabled={createReservation.isPending}
           />
         </div>
 
@@ -146,15 +182,17 @@ export function Step3Info() {
           onChange={(e) => handleChange("email", e.target.value)}
           error={errors.email}
           autoComplete="email"
+          disabled={createReservation.isPending}
         />
 
         <Select
           label="상담분야 *"
           placeholder="상담받을 분야를 선택하세요"
-          options={TOPIC_OPTIONS}
+          options={topicOptions}
           value={localForm.topic}
           onChange={(v) => handleChange("topic", v)}
           error={errors.topic}
+          disabled={createReservation.isPending}
         />
 
         <Textarea
@@ -165,6 +203,7 @@ export function Step3Info() {
           rows={5}
           maxLength={500}
           error={errors.content}
+          disabled={createReservation.isPending}
         />
 
         {/* 개인정보 동의 */}
@@ -180,9 +219,11 @@ export function Step3Info() {
               checked={localForm.agreePrivacy}
               onChange={(e) => handleChange("agreePrivacy", e.target.checked)}
               className="sr-only"
-              aria-describedby={errors.agreePrivacy ? "privacy-error" : undefined}
+              aria-describedby={
+                errors.agreePrivacy ? "privacy-error" : undefined
+              }
+              disabled={createReservation.isPending}
             />
-            {/* 커스텀 체크박스 */}
             <div
               className={cn(
                 "mt-0.5 w-5 h-5 rounded-none border-2 flex items-center justify-center shrink-0 transition-colors",
@@ -236,6 +277,15 @@ export function Step3Info() {
         </div>
       </div>
 
+      {/* API 에러 */}
+      {apiError && (
+        <div className="mt-4 p-3 bg-error/5 border border-error/20 rounded-card">
+          <p className="text-caption text-error" role="alert">
+            {apiError}
+          </p>
+        </div>
+      )}
+
       {/* 하단 버튼 */}
       <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
         <Button
@@ -243,6 +293,7 @@ export function Step3Info() {
           size="lg"
           onClick={() => setStep(2)}
           className="w-full sm:w-auto"
+          disabled={createReservation.isPending}
         >
           ← 이전
         </Button>
@@ -250,6 +301,7 @@ export function Step3Info() {
           variant="primary"
           size="lg"
           onClick={handleSubmit}
+          loading={createReservation.isPending}
           className="w-full sm:w-auto"
         >
           예약 신청하기

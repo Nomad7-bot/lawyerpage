@@ -1,15 +1,15 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
-import { ATTORNEYS } from "@/constants/dummy";
+import { useAttorneys } from "@/hooks/useReservation";
 import { useReservationStore } from "@/store/reservationStore";
 
 export function Step1Attorney() {
   const { selectedAttorneySlug, setAttorney, setStep } = useReservationStore();
+  const { data: attorneys, isLoading, error, refetch } = useAttorneys();
 
-  // undefined = 아직 선택 안 함, null = "변호사 무관", string = 특정 변호사 slug
   const hasSelection = selectedAttorneySlug !== undefined;
 
   function isCardSelected(slug: string | null): boolean {
@@ -25,11 +25,23 @@ export function Step1Attorney() {
         </p>
       </div>
 
+      {/* 에러 상태 */}
+      {error && (
+        <div className="mb-4 p-4 bg-error/5 border border-error/20 rounded-card text-center">
+          <p className="text-body text-error mb-3">
+            변호사 목록을 불러오지 못했습니다.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>
+            다시 시도
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* 변호사 무관 카드 */}
         <button
           type="button"
-          onClick={() => setAttorney(null)}
+          onClick={() => setAttorney(null, null)}
           className={cn(
             "text-left p-5 rounded-card border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             isCardSelected(null)
@@ -58,12 +70,33 @@ export function Step1Attorney() {
           )}
         </button>
 
-        {/* 변호사 카드 5개 */}
-        {ATTORNEYS.map((attorney) => (
+        {/* 로딩 스켈레톤 */}
+        {isLoading &&
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="p-5 rounded-card border-2 border-bg-light animate-pulse"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-bg-light shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-bg-light rounded w-20" />
+                  <div className="h-3 bg-bg-light rounded w-16" />
+                </div>
+              </div>
+              <div className="mt-3 flex gap-1.5">
+                <div className="h-5 bg-bg-light rounded w-10" />
+                <div className="h-5 bg-bg-light rounded w-12" />
+              </div>
+            </div>
+          ))}
+
+        {/* 변호사 카드 */}
+        {attorneys?.map((attorney) => (
           <button
             key={attorney.slug}
             type="button"
-            onClick={() => setAttorney(attorney.slug)}
+            onClick={() => setAttorney(attorney.slug, attorney.id)}
             className={cn(
               "text-left p-5 rounded-card border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
               isCardSelected(attorney.slug)
@@ -73,7 +106,6 @@ export function Step1Attorney() {
             aria-pressed={isCardSelected(attorney.slug)}
           >
             <div className="flex items-center gap-4">
-              {/* 아바타 */}
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <span className="text-h4 font-bold text-primary/40">
                   {attorney.name[0]}
@@ -86,17 +118,18 @@ export function Step1Attorney() {
                 <p className="text-caption text-accent">{attorney.position}</p>
               </div>
             </div>
-            {/* 전문분야 태그 */}
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {attorney.specialties.map((s) => (
-                <span
-                  key={s}
-                  className="text-caption px-2 py-0.5 bg-bg-light text-text-main"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
+            {attorney.specialties.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {attorney.specialties.map((s) => (
+                  <span
+                    key={s}
+                    className="text-caption px-2 py-0.5 bg-bg-light text-text-main"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
             {isCardSelected(attorney.slug) && (
               <p className="mt-2 text-caption text-accent font-medium">
                 ✓ 선택됨

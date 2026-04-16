@@ -6,8 +6,7 @@ export const reservationFormSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
   phone: z
     .string()
-    .min(9, "올바른 연락처를 입력해주세요")
-    .regex(/^[0-9\-]+$/, "숫자와 하이픈(-)만 입력 가능합니다"),
+    .regex(/^010-\d{4}-\d{4}$/, "올바른 연락처 형식이 아닙니다 (010-XXXX-XXXX)"),
   email: z
     .string()
     .min(1, "이메일을 입력해주세요")

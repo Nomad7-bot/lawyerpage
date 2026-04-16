@@ -1,34 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
 import { toYMD, formatDateKo, WEEKDAYS_KO } from "@/lib/utils/date";
 import { useReservationStore } from "@/store/reservationStore";
+import { useTimeSlots } from "@/hooks/useReservation";
+import type { TimeSlot } from "@/types";
 
-// 더미 시간 슬롯 (10:00, 15:00는 불가 처리)
-// Phase 2: API에서 예약 가능 슬롯을 동적으로 조회하도록 교체
-const TIME_SLOTS = [
+// "변호사 무관" 선택 시 기본 시간 슬롯
+const DEFAULT_TIME_SLOTS: TimeSlot[] = [
   { time: "09:00", available: true },
-  { time: "10:00", available: false },
+  { time: "09:30", available: true },
+  { time: "10:00", available: true },
+  { time: "10:30", available: true },
   { time: "11:00", available: true },
+  { time: "11:30", available: true },
   { time: "14:00", available: true },
-  { time: "15:00", available: false },
+  { time: "14:30", available: true },
+  { time: "15:00", available: true },
+  { time: "15:30", available: true },
   { time: "16:00", available: true },
   { time: "16:30", available: true },
-  { time: "17:00", available: true },
 ];
 
 export function Step2Schedule() {
-  const { selectedDate, selectedTime, setDate, setTime, setStep } =
-    useReservationStore();
+  const {
+    selectedAttorneyId,
+    selectedDate,
+    selectedTime,
+    setDate,
+    setTime,
+    setStep,
+  } = useReservationStore();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+
+  // 변호사가 선택된 경우만 API 호출 (null = 변호사 무관 → 기본 슬롯 사용)
+  const {
+    data: apiSlots,
+    isLoading: slotsLoading,
+    error: slotsError,
+  } = useTimeSlots(selectedAttorneyId ?? null, selectedDate);
+
+  // 변호사 무관이면 기본 슬롯, 아니면 API 결과 사용
+  const isAutoAssign = selectedAttorneyId === null;
+  const timeSlots = isAutoAssign ? DEFAULT_TIME_SLOTS : (apiSlots ?? []);
 
   function prevMonth() {
     if (viewMonth === 0) {
@@ -48,7 +70,6 @@ export function Step2Schedule() {
     }
   }
 
-  // 달력에 표시할 날짜 배열 (앞 빈칸 포함)
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const calCells: (number | null)[] = [
@@ -58,9 +79,9 @@ export function Step2Schedule() {
 
   function isDisabled(day: number): boolean {
     const d = new Date(viewYear, viewMonth, day);
-    if (d < today) return true;
+    if (d <= today) return true;
     const dow = d.getDay();
-    return dow === 0 || dow === 6; // 주말 불가
+    return dow === 0 || dow === 6;
   }
 
   function handleDayClick(day: number) {
@@ -83,7 +104,6 @@ export function Step2Schedule() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-8">
         {/* ── 캘린더 ── */}
         <div>
-          {/* 월 헤더 */}
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
@@ -106,7 +126,6 @@ export function Step2Schedule() {
             </button>
           </div>
 
-          {/* 요일 헤더 */}
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS_KO.map((w, i) => (
               <div
@@ -122,15 +141,16 @@ export function Step2Schedule() {
             ))}
           </div>
 
-          {/* 날짜 그리드 */}
           <div className="grid grid-cols-7 gap-1">
             {calCells.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} />;
               const ymd = toYMD(new Date(viewYear, viewMonth, day));
               const disabled = isDisabled(day);
               const isSelected = selectedDate === ymd;
-              const isSunday = new Date(viewYear, viewMonth, day).getDay() === 0;
-              const isSaturday = new Date(viewYear, viewMonth, day).getDay() === 6;
+              const isSunday =
+                new Date(viewYear, viewMonth, day).getDay() === 0;
+              const isSaturday =
+                new Date(viewYear, viewMonth, day).getDay() === 6;
 
               return (
                 <button
@@ -141,9 +161,14 @@ export function Step2Schedule() {
                   className={cn(
                     "h-10 w-full rounded-card text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                     isSelected && "bg-primary text-bg-white font-semibold",
-                    !isSelected && !disabled && "hover:bg-bg-light text-text-main",
+                    !isSelected &&
+                      !disabled &&
+                      "hover:bg-bg-light text-text-main",
                     !isSelected && !disabled && isSunday && "text-error",
-                    !isSelected && !disabled && isSaturday && "text-primary-light",
+                    !isSelected &&
+                      !disabled &&
+                      isSaturday &&
+                      "text-primary-light",
                     disabled && "text-text-sub/30 cursor-not-allowed"
                   )}
                   aria-label={`${viewYear}년 ${viewMonth + 1}월 ${day}일${disabled ? " (예약 불가)" : ""}`}
@@ -159,35 +184,70 @@ export function Step2Schedule() {
         {/* ── 시간 슬롯 ── */}
         <div>
           <p className="text-body font-semibold text-primary mb-3">
-            {selectedDate ? formatDateKo(selectedDate) : "날짜를 먼저 선택하세요"}
+            {selectedDate
+              ? formatDateKo(selectedDate)
+              : "날짜를 먼저 선택하세요"}
           </p>
+
           {selectedDate ? (
-            <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
-              {TIME_SLOTS.map(({ time, available }) => {
-                const isSelected = selectedTime === time;
-                return (
-                  <button
-                    key={time}
-                    type="button"
-                    disabled={!available}
-                    onClick={() => available && setTime(time)}
-                    className={cn(
-                      "h-11 rounded-card text-body font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                      isSelected &&
-                        "bg-accent text-bg-white",
-                      !isSelected && available &&
-                        "border border-primary text-primary hover:bg-primary/5",
-                      !available &&
-                        "bg-bg-light text-text-sub/50 cursor-not-allowed"
-                    )}
-                    aria-label={`${time}${!available ? " (예약 불가)" : ""}`}
-                    aria-pressed={isSelected}
-                  >
-                    {time}
-                  </button>
-                );
-              })}
-            </div>
+            <>
+              {/* 로딩 */}
+              {!isAutoAssign && slotsLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2
+                    className="w-5 h-5 animate-spin text-primary"
+                    aria-hidden
+                  />
+                  <span className="ml-2 text-caption text-text-sub">
+                    시간 조회 중...
+                  </span>
+                </div>
+              )}
+
+              {/* 에러 */}
+              {!isAutoAssign && slotsError && (
+                <p className="text-caption text-error py-4">
+                  시간 슬롯을 불러오지 못했습니다. 다른 날짜를 선택해주세요.
+                </p>
+              )}
+
+              {/* 슬롯 없음 */}
+              {!slotsLoading && !slotsError && timeSlots.length === 0 && (
+                <p className="text-caption text-text-sub py-4">
+                  해당 날짜에 상담 가능한 시간이 없습니다.
+                </p>
+              )}
+
+              {/* 슬롯 목록 */}
+              {!slotsLoading && !slotsError && timeSlots.length > 0 && (
+                <div className="grid grid-cols-3 md:grid-cols-2 gap-2">
+                  {timeSlots.map(({ time, available }) => {
+                    const isSelected = selectedTime === time;
+                    return (
+                      <button
+                        key={time}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => available && setTime(time)}
+                        className={cn(
+                          "h-11 rounded-card text-body font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                          isSelected && "bg-accent text-bg-white",
+                          !isSelected &&
+                            available &&
+                            "border border-primary text-primary hover:bg-primary/5",
+                          !available &&
+                            "bg-bg-light text-text-sub/50 cursor-not-allowed"
+                        )}
+                        aria-label={`${time}${!available ? " (예약 불가)" : ""}`}
+                        aria-pressed={isSelected}
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-caption text-text-sub">
               날짜를 선택하면 예약 가능한 시간이 표시됩니다.

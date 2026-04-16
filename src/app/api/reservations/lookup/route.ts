@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       client_name: data.client_name,
       client_phone: maskedPhone,
       client_email: data.client_email,
+      attorney_id: data.attorney_id,
       attorney_name: data.attorneys?.name ?? null,
       practice_area_name: data.practice_areas?.name ?? null,
       consultation_note: data.consultation_note,

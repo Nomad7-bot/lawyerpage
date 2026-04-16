@@ -5,7 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { buttonStyles } from "@/components/ui/Button";
 import { formatDateTimeKo } from "@/lib/utils/date";
 import { useReservationStore } from "@/store/reservationStore";
-import { ATTORNEYS } from "@/constants/dummy";
+import { useAttorneys, usePracticeAreas } from "@/hooks/useReservation";
 
 type SummaryRowProps = { label: string; value: string };
 
@@ -30,9 +30,13 @@ export function Step4Confirm() {
     reset,
   } = useReservationStore();
 
+  const { data: attorneys } = useAttorneys();
+  const { data: practiceAreas } = usePracticeAreas();
+
+  // 변호사명 resolve (캐시에서)
   const attorney =
-    selectedAttorneySlug && selectedAttorneySlug !== "any"
-      ? ATTORNEYS.find((a) => a.slug === selectedAttorneySlug)
+    selectedAttorneySlug && attorneys
+      ? attorneys.find((a) => a.slug === selectedAttorneySlug)
       : null;
 
   const attorneyLabel = attorney
@@ -44,7 +48,12 @@ export function Step4Confirm() {
       ? formatDateTimeKo(selectedDate, selectedTime)
       : "";
 
-  const topic = (formData.topic as string) ?? "";
+  // 상담분야명 resolve (formData.topic은 이제 UUID)
+  const topicId = formData.topic as string | undefined;
+  const topicLabel =
+    topicId && practiceAreas
+      ? (practiceAreas.find((pa) => pa.id === topicId)?.name ?? "")
+      : "";
 
   return (
     <div className="max-w-lg mx-auto text-center">
@@ -77,7 +86,7 @@ export function Step4Confirm() {
           <SummaryRow label="예약번호" value={reservationNumber ?? "-"} />
           <SummaryRow label="담당 변호사" value={attorneyLabel} />
           <SummaryRow label="상담 일시" value={dateTimeLabel} />
-          <SummaryRow label="상담 분야" value={topic} />
+          <SummaryRow label="상담 분야" value={topicLabel} />
         </div>
       </div>
 

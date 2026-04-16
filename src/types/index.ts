@@ -35,6 +35,7 @@ export type ReservationLookupResult = {
   client_name: string;
   client_phone: string;
   client_email: string;
+  attorney_id: string | null;
   attorney_name: string | null;
   practice_area_name: string | null;
   consultation_note: string | null;
@@ -42,6 +43,22 @@ export type ReservationLookupResult = {
   preferred_time: string;
   reject_reason: string | null;
   created_at: string;
+};
+
+// 변호사 목록 (브라우저 Supabase 쿼리 결과)
+export type AttorneyListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  position: string;
+  specialties: string[];
+};
+
+// 상담분야 목록 (브라우저 Supabase 쿼리 결과)
+export type PracticeAreaListItem = {
+  id: string;
+  name: string;
+  slug: string;
 };
 
 // 가용 시간 슬롯
