@@ -5,9 +5,13 @@ import { buttonStyles } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { INSIGHTS } from "@/constants/dummy";
+import type { PostWithRelations } from "@/types/database";
 
-export function InsightSection() {
+type InsightSectionProps = {
+  posts: PostWithRelations[];
+};
+
+export function InsightSection({ posts }: InsightSectionProps) {
   return (
     <section className="py-16 md:py-22 bg-bg-light">
       <div className="container-content">
@@ -27,7 +31,7 @@ export function InsightSection() {
         </div>
 
         <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {INSIGHTS.map((post) => (
+          {posts.map((post) => (
             <Link
               key={post.slug}
               href={`/insights/${post.slug}`}
@@ -47,21 +51,25 @@ export function InsightSection() {
                   />
                 </div>
                 <div className="p-5 md:p-6 flex flex-col gap-3 flex-1">
-                  <div>
-                    <Badge variant="category">{post.category}</Badge>
-                  </div>
+                  {post.category && (
+                    <div>
+                      <Badge variant="category">{post.category.name}</Badge>
+                    </div>
+                  )}
                   <h3 className="text-h4 text-primary line-clamp-2 group-hover:text-primary-light transition-colors">
                     {post.title}
                   </h3>
                   <p className="text-caption text-text-sub line-clamp-2 leading-relaxed flex-1">
                     {post.excerpt}
                   </p>
-                  <time
-                    dateTime={post.publishedAt}
-                    className="text-caption text-text-sub/70"
-                  >
-                    {format(new Date(post.publishedAt), "yyyy.MM.dd")}
-                  </time>
+                  {post.published_at && (
+                    <time
+                      dateTime={post.published_at}
+                      className="text-caption text-text-sub/70"
+                    >
+                      {format(new Date(post.published_at), "yyyy.MM.dd")}
+                    </time>
+                  )}
                 </div>
               </Card>
             </Link>

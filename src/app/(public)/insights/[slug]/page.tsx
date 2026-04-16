@@ -6,7 +6,12 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { buttonStyles } from "@/components/ui/Button";
-import { INSIGHTS_DETAIL, INSIGHTS, ATTORNEYS_DETAIL } from "@/constants/dummy";
+import {
+  getPostBySlug,
+  getPosts,
+  getRelatedPosts,
+  incrementPostViewCount,
+} from "@/lib/supabase/queries";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -14,12 +19,14 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const article = INSIGHTS_DETAIL[slug];
+  const article = await getPostBySlug(slug);
   if (!article) return {};
+  const title = article.meta_title ?? article.title;
+  const description = article.meta_description ?? article.excerpt ?? undefined;
   return {
-    title: article.title,
-    description: article.excerpt,
-    openGraph: { title: article.title, description: article.excerpt },
+    title,
+    description,
+    openGraph: { title, description },
   };
 }
 
@@ -33,18 +40,25 @@ function formatDate(iso: string) {
 
 export default async function InsightDetailPage({ params }: Props) {
   const { slug } = await params;
-  const article = INSIGHTS_DETAIL[slug];
+  const article = await getPostBySlug(slug);
   if (!article) notFound();
 
-  const author = ATTORNEYS_DETAIL[article.authorSlug];
+  // 조회수 증가 — fire-and-forget (렌더링 지연 방지)
+  void incrementPostViewCount(slug);
 
-  // 같은 카테고리에서 관련 글 3건 (현재 글 제외)
-  const relatedArticles = INSIGHTS.filter(
-    (a) => a.category === article.category && a.slug !== article.slug
-  ).slice(0, 3);
+  const [relatedArticles, { posts: bottomRelatedPool }] = await Promise.all([
+    article.category_id
+      ? getRelatedPosts(article.category_id, slug, 3)
+      : Promise.resolve([]),
+    getPosts({ limit: 4 }),
+  ]);
 
-  // 하단 관련 법률정보 3건 (카테고리 무관, 최신순)
-  const bottomRelated = INSIGHTS.filter((a) => a.slug !== article.slug).slice(0, 3);
+  // 하단 관련 4건 중 현재 글 제외 후 3건
+  const bottomRelated = bottomRelatedPool
+    .filter((p) => p.slug !== slug)
+    .slice(0, 3);
+
+  const author = article.author;
 
   return (
     <main>
@@ -55,21 +69,32 @@ export default async function InsightDetailPage({ params }: Props) {
             items={[
               { label: "홈", href: "/" },
               { label: "법률정보", href: "/insights" },
-              { label: article.category, href: `/insights?category=${encodeURIComponent(article.category)}` },
+              ...(article.category
+                ? [
+                    {
+                      label: article.category.name,
+                      href: `/insights?category=${encodeURIComponent(article.category.slug)}`,
+                    },
+                  ]
+                : []),
               { label: article.title },
             ]}
           />
 
-          <div className="mt-6 flex items-center gap-2">
-            <Badge variant="category">{article.category}</Badge>
-            <span className="text-caption text-text-sub flex items-center gap-1">
-              <CalendarDays className="w-3.5 h-3.5" aria-hidden />
-              {formatDate(article.publishedAt)}
-            </span>
-            {article.readingTime && (
+          <div className="mt-6 flex items-center gap-2 flex-wrap">
+            {article.category && (
+              <Badge variant="category">{article.category.name}</Badge>
+            )}
+            {article.published_at && (
+              <span className="text-caption text-text-sub flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" aria-hidden />
+                {formatDate(article.published_at)}
+              </span>
+            )}
+            {article.reading_time && (
               <span className="text-caption text-text-sub flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" aria-hidden />
-                {article.readingTime}분 읽기
+                {article.reading_time}분 읽기
               </span>
             )}
           </div>
@@ -94,9 +119,6 @@ export default async function InsightDetailPage({ params }: Props) {
                 <p className="text-body font-semibold text-primary group-hover:text-primary-light transition-colors">
                   {author.name} {author.position}
                 </p>
-                <p className="text-caption text-accent">
-                  {author.specialties.join(" · ")}
-                </p>
               </div>
             </Link>
           )}
@@ -111,14 +133,17 @@ export default async function InsightDetailPage({ params }: Props) {
             <article>
               <div
                 className="article-body"
-                dangerouslySetInnerHTML={{ __html: article.body }}
+                dangerouslySetInnerHTML={{ __html: article.content }}
               />
 
               {/* 태그 */}
-              {article.tags.length > 0 && (
+              {article.tags && article.tags.length > 0 && (
                 <div className="mt-10 pt-8 border-t border-bg-light">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Tag className="w-4 h-4 text-text-sub shrink-0" aria-hidden />
+                    <Tag
+                      className="w-4 h-4 text-text-sub shrink-0"
+                      aria-hidden
+                    />
                     {article.tags.map((tag) => (
                       <Badge key={tag} variant="tag">
                         #{tag}
@@ -134,9 +159,7 @@ export default async function InsightDetailPage({ params }: Props) {
               {/* 목차 (TOC) */}
               {article.toc.length > 0 && (
                 <Card padding="md">
-                  <h2 className="text-body font-semibold text-primary">
-                    목차
-                  </h2>
+                  <h2 className="text-body font-semibold text-primary">목차</h2>
                   <div className="mt-2 h-0.5 w-6 bg-accent" aria-hidden />
                   <nav aria-label="본문 목차">
                     <ol className="mt-3 space-y-2">
@@ -175,9 +198,11 @@ export default async function InsightDetailPage({ params }: Props) {
                           <p className="text-caption font-medium text-primary group-hover:text-primary-light transition-colors line-clamp-2">
                             {rel.title}
                           </p>
-                          <p className="mt-0.5 text-caption text-text-sub">
-                            {formatDate(rel.publishedAt)}
-                          </p>
+                          {rel.published_at && (
+                            <p className="mt-0.5 text-caption text-text-sub">
+                              {formatDate(rel.published_at)}
+                            </p>
+                          )}
                         </Link>
                       </li>
                     ))}
@@ -233,18 +258,24 @@ export default async function InsightDetailPage({ params }: Props) {
                       </span>
                     </div>
                     <div className="flex flex-col flex-1 p-5">
-                      <Badge variant="category" className="self-start">
-                        {item.category}
-                      </Badge>
+                      {item.category && (
+                        <Badge variant="category" className="self-start">
+                          {item.category.name}
+                        </Badge>
+                      )}
                       <h3 className="mt-2 text-body font-semibold text-primary line-clamp-2 group-hover:text-primary-light transition-colors">
                         {item.title}
                       </h3>
-                      <p className="mt-1 text-caption text-text-sub flex-1 line-clamp-2">
-                        {item.excerpt}
-                      </p>
-                      <p className="mt-3 text-caption text-text-sub">
-                        {formatDate(item.publishedAt)}
-                      </p>
+                      {item.excerpt && (
+                        <p className="mt-1 text-caption text-text-sub flex-1 line-clamp-2">
+                          {item.excerpt}
+                        </p>
+                      )}
+                      {item.published_at && (
+                        <p className="mt-3 text-caption text-text-sub">
+                          {formatDate(item.published_at)}
+                        </p>
+                      )}
                     </div>
                   </Card>
                 </Link>

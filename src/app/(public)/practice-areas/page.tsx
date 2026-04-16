@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Card } from "@/components/ui/Card";
-import { PRACTICE_AREAS } from "@/constants/dummy";
+import { getPracticeAreas } from "@/lib/supabase/queries";
+import { getIcon } from "@/lib/utils/iconMap";
 
 export const metadata: Metadata = {
   title: "업무분야",
@@ -20,16 +21,15 @@ const breadcrumbItems = [
   { label: "업무분야" },
 ];
 
-export default function PracticeAreasPage() {
+export default async function PracticeAreasPage() {
+  const areas = await getPracticeAreas();
+
   return (
     <main>
       {/* Page Header Banner */}
       <section className="bg-primary flex flex-col justify-center min-h-[320px]">
         <div className="container-content py-12">
-          <Breadcrumb
-            items={breadcrumbItems}
-            variant="dark"
-          />
+          <Breadcrumb items={breadcrumbItems} variant="dark" />
           <h1 className="mt-6 text-h1 font-bold text-bg-white">업무분야</h1>
           <p className="mt-3 text-body text-bg-white/70">
             분야별 전문 변호사가 최적의 법률 서비스를 제공합니다.
@@ -41,14 +41,14 @@ export default function PracticeAreasPage() {
       <section className="py-16 md:py-22 bg-bg-light">
         <div className="container-content">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {PRACTICE_AREAS.map((area) => {
-              const Icon = area.icon;
+            {areas.map((area) => {
+              const Icon = getIcon(area.icon_name);
               return (
                 <Link
                   key={area.slug}
                   href={`/practice-areas/${area.slug}`}
                   className="group"
-                  aria-label={`${area.title} 상세 보기`}
+                  aria-label={`${area.name} 상세 보기`}
                 >
                   <Card hover className="h-full flex flex-col">
                     {/* 아이콘 */}
@@ -58,7 +58,7 @@ export default function PracticeAreasPage() {
 
                     {/* 제목 */}
                     <h2 className="mt-5 text-h4 font-semibold text-primary">
-                      {area.title}
+                      {area.name}
                     </h2>
 
                     {/* 요약 */}

@@ -2,19 +2,24 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { PRACTICE_AREAS, type PracticeAreaItem } from "@/constants/dummy";
+import { getIcon } from "@/lib/utils/iconMap";
+import type { PracticeArea } from "@/types/database";
 
-function PracticeAreaCard({ area }: { area: PracticeAreaItem }) {
-  const Icon = area.icon;
+type PracticeAreaSectionProps = {
+  areas: Pick<PracticeArea, "slug" | "name" | "description" | "icon_name">[];
+};
+
+function PracticeAreaCard({ area }: { area: PracticeAreaSectionProps["areas"][number] }) {
+  const Icon = getIcon(area.icon_name);
   return (
     <Link
       href={`/practice-areas/${area.slug}`}
       className="block h-full group"
-      aria-label={`${area.title} 업무분야 상세 보기`}
+      aria-label={`${area.name} 업무분야 상세 보기`}
     >
       <Card hover padding="lg" className="h-full">
         <Icon className="h-10 w-10 text-accent" aria-hidden />
-        <h3 className="mt-5 text-h4 text-primary">{area.title}</h3>
+        <h3 className="mt-5 text-h4 text-primary">{area.name}</h3>
         <p className="mt-2 text-caption text-text-sub leading-relaxed">
           {area.description}
         </p>
@@ -27,7 +32,7 @@ function PracticeAreaCard({ area }: { area: PracticeAreaItem }) {
   );
 }
 
-export function PracticeAreaSection() {
+export function PracticeAreaSection({ areas }: PracticeAreaSectionProps) {
   return (
     <section className="py-16 md:py-22 bg-bg-light">
       <div className="container-content">
@@ -39,7 +44,7 @@ export function PracticeAreaSection() {
 
         {/* 데스크톱: 3x2 그리드 */}
         <div className="mt-12 hidden md:grid md:grid-cols-3 gap-6">
-          {PRACTICE_AREAS.map((area) => (
+          {areas.map((area) => (
             <PracticeAreaCard key={area.slug} area={area} />
           ))}
         </div>
@@ -47,7 +52,7 @@ export function PracticeAreaSection() {
         {/* 모바일: 가로 스크롤 */}
         <div className="mt-10 md:hidden -mx-4 px-4 overflow-x-auto">
           <div className="flex gap-4 snap-x snap-mandatory pb-4">
-            {PRACTICE_AREAS.map((area) => (
+            {areas.map((area) => (
               <div
                 key={area.slug}
                 className="min-w-[280px] snap-start flex-shrink-0"

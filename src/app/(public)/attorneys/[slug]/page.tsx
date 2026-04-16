@@ -6,7 +6,8 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { buttonStyles } from "@/components/ui/Button";
-import { ATTORNEYS_DETAIL } from "@/constants/dummy";
+import { getAttorneyBySlug } from "@/lib/supabase/queries";
+import { getIcon } from "@/lib/utils/iconMap";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -14,23 +15,27 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const attorney = ATTORNEYS_DETAIL[slug];
+  const attorney = await getAttorneyBySlug(slug);
   if (!attorney) return {};
+  const title = `${attorney.name} ${attorney.position}`;
+  const description = attorney.intro ?? attorney.bio ?? undefined;
   return {
-    title: `${attorney.name} ${attorney.position}`,
-    description: attorney.intro,
-    openGraph: {
-      title: `${attorney.name} ${attorney.position}`,
-      description: attorney.intro,
-    },
+    title,
+    description,
+    openGraph: { title, description },
   };
 }
 
 export default async function AttorneyDetailPage({ params }: Props) {
   const { slug } = await params;
-  const attorney = ATTORNEYS_DETAIL[slug];
+  const attorney = await getAttorneyBySlug(slug);
 
   if (!attorney) notFound();
+
+  // 전문분야 태그 — attorney_practice_areas JOIN 기반
+  const specialties = attorney.attorney_practice_areas
+    .map((rel) => rel.practice_areas?.name)
+    .filter((v): v is string => Boolean(v));
 
   return (
     <main>
@@ -64,19 +69,23 @@ export default async function AttorneyDetailPage({ params }: Props) {
               </h1>
 
               {/* 전문분야 태그 */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {attorney.specialties.map((s) => (
-                  <span
-                    key={s}
-                    className="text-caption px-3 py-1 bg-bg-white/10 text-bg-white/80"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
+              {specialties.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {specialties.map((s) => (
+                    <span
+                      key={s}
+                      className="text-caption px-3 py-1 bg-bg-white/10 text-bg-white/80"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* 소개문 */}
-              <p className="mt-5 text-body text-bg-white/80">{attorney.bio}</p>
+              {attorney.bio && (
+                <p className="mt-5 text-body text-bg-white/80">{attorney.bio}</p>
+              )}
 
               {/* CTA 버튼 */}
               <div className="mt-8">
@@ -98,71 +107,81 @@ export default async function AttorneyDetailPage({ params }: Props) {
       </section>
 
       {/* ── 경력 Timeline ── */}
-      <section className="py-16 md:py-22 bg-bg-white">
-        <div className="container-content">
-          <SectionTitle
-            title="경력"
-            subtitle="학력·자격·경력 사항"
-            align="left"
-            className="mb-12"
-          />
-
-          <div className="relative ml-4">
-            {/* 세로선 */}
-            <div
-              className="absolute -left-4 top-0 bottom-0 w-0.5 bg-accent/30"
-              aria-hidden
+      {attorney.career.length > 0 && (
+        <section className="py-16 md:py-22 bg-bg-white">
+          <div className="container-content">
+            <SectionTitle
+              title="경력"
+              subtitle="학력·자격·경력 사항"
+              align="left"
+              className="mb-12"
             />
-            {attorney.career.map((item, idx) => (
-              <div key={idx} className="relative pl-8 pb-10 last:pb-0">
-                {/* 도트 */}
-                <div
-                  className="absolute -left-4 top-1.5 w-3 h-3 rounded-full bg-accent -translate-x-1/2 ring-4 ring-bg-white"
-                  aria-hidden
-                />
-                <span className="text-caption font-bold text-accent">
-                  {item.year}
-                </span>
-                <h3 className="mt-0.5 text-body font-semibold text-primary">
-                  {item.title}
-                </h3>
-                <p className="mt-1 text-body text-text-sub">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── 전문 분야 3개 카드 ── */}
-      <section className="py-16 md:py-22 bg-bg-light">
-        <div className="container-content">
-          <SectionTitle
-            title="전문 분야"
-            subtitle={`${attorney.name} 변호사의 주요 전문 분야입니다.`}
-            align="left"
-            className="mb-10"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {attorney.practiceAreas.map((area) => {
-              const AreaIcon = area.icon;
-              return (
-                <Card key={area.title} className="flex flex-col">
-                  <div className="w-12 h-12 flex items-center justify-center bg-bg-light rounded-card">
-                    <AreaIcon className="w-6 h-6 text-accent" aria-hidden />
+            <div className="relative ml-4">
+              {/* 세로선 */}
+              <div
+                className="absolute -left-4 top-0 bottom-0 w-0.5 bg-accent/30"
+                aria-hidden
+              />
+              {attorney.career.map((item, idx) => {
+                const heading = item.title ?? item.content ?? "";
+                const detail = item.title ? item.desc ?? item.content : "";
+                return (
+                  <div key={idx} className="relative pl-8 pb-10 last:pb-0">
+                    {/* 도트 */}
+                    <div
+                      className="absolute -left-4 top-1.5 w-3 h-3 rounded-full bg-accent -translate-x-1/2 ring-4 ring-bg-white"
+                      aria-hidden
+                    />
+                    <span className="text-caption font-bold text-accent">
+                      {item.year}
+                    </span>
+                    <h3 className="mt-0.5 text-body font-semibold text-primary">
+                      {heading}
+                    </h3>
+                    {detail && (
+                      <p className="mt-1 text-body text-text-sub">{detail}</p>
+                    )}
                   </div>
-                  <h3 className="mt-4 text-h4 font-semibold text-primary">
-                    {area.title}
-                  </h3>
-                  <p className="mt-2 text-body text-text-sub flex-1">
-                    {area.desc}
-                  </p>
-                </Card>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ── 전문 분야 카드 ── */}
+      {attorney.practice_area_cards.length > 0 && (
+        <section className="py-16 md:py-22 bg-bg-light">
+          <div className="container-content">
+            <SectionTitle
+              title="전문 분야"
+              subtitle={`${attorney.name} 변호사의 주요 전문 분야입니다.`}
+              align="left"
+              className="mb-10"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {attorney.practice_area_cards.map((area) => {
+                const AreaIcon = getIcon(area.icon_name);
+                return (
+                  <Card key={area.title} className="flex flex-col">
+                    <div className="w-12 h-12 flex items-center justify-center bg-bg-light rounded-card">
+                      <AreaIcon className="w-6 h-6 text-accent" aria-hidden />
+                    </div>
+                    <h3 className="mt-4 text-h4 font-semibold text-primary">
+                      {area.title}
+                    </h3>
+                    <p className="mt-2 text-body text-text-sub flex-1">
+                      {area.desc}
+                    </p>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── 하단 CTA ── */}
       <section className="bg-primary py-16 md:py-22">

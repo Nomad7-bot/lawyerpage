@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Phone, Mail, MapPin, Clock, ChevronDown } from "lucide-react";
 import { SITE, GNB_MENU } from "@/constants/site";
 import { cn } from "@/lib/utils/cn";
+import type { SiteSettings } from "@/types/database";
 
 // 푸터 빠른 링크 (GNB 서브셋)
 const QUICK_LINKS = GNB_MENU.filter((item) =>
@@ -15,12 +16,23 @@ const QUICK_LINKS = GNB_MENU.filter((item) =>
 
 type AccordionId = "links" | "contact" | "hours";
 
-export function Footer() {
+type FooterProps = {
+  settings: SiteSettings;
+};
+
+export function Footer({ settings }: FooterProps) {
   const [openId, setOpenId] = useState<AccordionId | null>(null);
   const year = new Date().getFullYear();
 
   const toggle = (id: AccordionId) =>
     setOpenId((prev) => (prev === id ? null : id));
+
+  const phoneDisplay = settings.phone_display ?? settings.phone;
+  const fax = settings.fax ?? "";
+  const email = settings.email ?? "";
+  const weekday = settings.business_hours?.weekday ?? "";
+  const saturday = settings.business_hours?.saturday ?? "";
+  const sunday = settings.business_hours?.sunday ?? "";
 
   return (
     <footer className="bg-primary text-white">
@@ -31,7 +43,9 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="h-6 w-0.5 bg-accent" aria-hidden />
-              <span className="text-h4 font-bold text-white">{SITE.name}</span>
+              <span className="text-h4 font-bold text-white">
+                {settings.firm_name}
+              </span>
             </div>
             <p className="text-caption text-white/70 leading-relaxed">
               {SITE.description}
@@ -68,40 +82,44 @@ export function Footer() {
                   className="h-4 w-4 mt-0.5 shrink-0 text-accent"
                   aria-hidden
                 />
-                <span className="leading-relaxed">{SITE.nap.address}</span>
+                <span className="leading-relaxed">{settings.address}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0 text-accent" aria-hidden />
                 <a
-                  href={`tel:${SITE.nap.phone}`}
+                  href={`tel:${settings.phone}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.phoneDisplay}
+                  {phoneDisplay}
                 </a>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="h-4 w-4 shrink-0 flex items-center justify-center text-accent text-[10px] font-bold"
-                  aria-label="팩스"
-                >
-                  FAX
-                </span>
-                <a
-                  href={`tel:${SITE.nap.fax}`}
-                  className="hover:text-accent transition-colors"
-                >
-                  {SITE.nap.fax}
-                </a>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-                <a
-                  href={`mailto:${SITE.nap.email}`}
-                  className="hover:text-accent transition-colors"
-                >
-                  {SITE.nap.email}
-                </a>
-              </div>
+              {fax && (
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-4 w-4 shrink-0 flex items-center justify-center text-accent text-[10px] font-bold"
+                    aria-label="팩스"
+                  >
+                    FAX
+                  </span>
+                  <a
+                    href={`tel:${fax}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {fax}
+                  </a>
+                </div>
+              )}
+              {email && (
+                <div className="flex items-center gap-2.5">
+                  <Mail className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                  <a
+                    href={`mailto:${email}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {email}
+                  </a>
+                </div>
+              )}
             </address>
           </div>
 
@@ -118,15 +136,15 @@ export function Footer() {
               <div className="space-y-2">
                 <div>
                   <p className="text-white/50 text-[12px]">평일</p>
-                  <p className="text-white/75">{SITE.businessHours.weekday}</p>
+                  <p className="text-white/75">{weekday}</p>
                 </div>
                 <div>
                   <p className="text-white/50 text-[12px]">토요일</p>
-                  <p className="text-white/75">{SITE.businessHours.saturday}</p>
+                  <p className="text-white/75">{saturday}</p>
                 </div>
                 <div>
                   <p className="text-white/50 text-[12px]">일요일·공휴일</p>
-                  <p className="text-white/75">{SITE.businessHours.sunday}</p>
+                  <p className="text-white/75">{sunday}</p>
                 </div>
               </div>
             </div>
@@ -139,7 +157,9 @@ export function Footer() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <span className="h-6 w-0.5 bg-accent" aria-hidden />
-              <span className="text-h4 font-bold text-white">{SITE.name}</span>
+              <span className="text-h4 font-bold text-white">
+                {settings.firm_name}
+              </span>
             </div>
             <p className="text-caption text-white/70 leading-relaxed">
               {SITE.description}
@@ -175,34 +195,38 @@ export function Footer() {
             onToggle={() => toggle("contact")}
           >
             <address className="not-italic space-y-2.5 text-caption text-white/75 pb-5">
-              <p className="leading-relaxed">{SITE.nap.address}</p>
+              <p className="leading-relaxed">{settings.address}</p>
               <p>
                 Tel.{" "}
                 <a
-                  href={`tel:${SITE.nap.phone}`}
+                  href={`tel:${settings.phone}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.phoneDisplay}
+                  {phoneDisplay}
                 </a>
               </p>
-              <p>
-                Fax.{" "}
-                <a
-                  href={`tel:${SITE.nap.fax}`}
-                  className="hover:text-accent transition-colors"
-                >
-                  {SITE.nap.fax}
-                </a>
-              </p>
-              <p>
-                Email.{" "}
-                <a
-                  href={`mailto:${SITE.nap.email}`}
-                  className="hover:text-accent transition-colors"
-                >
-                  {SITE.nap.email}
-                </a>
-              </p>
+              {fax && (
+                <p>
+                  Fax.{" "}
+                  <a
+                    href={`tel:${fax}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {fax}
+                  </a>
+                </p>
+              )}
+              {email && (
+                <p>
+                  Email.{" "}
+                  <a
+                    href={`mailto:${email}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {email}
+                  </a>
+                </p>
+              )}
             </address>
           </AccordionItem>
 
@@ -216,15 +240,15 @@ export function Footer() {
             <dl className="space-y-2 text-caption text-white/75 pb-5">
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">평일</dt>
-                <dd>{SITE.businessHours.weekday}</dd>
+                <dd>{weekday}</dd>
               </div>
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">토요일</dt>
-                <dd>{SITE.businessHours.saturday}</dd>
+                <dd>{saturday}</dd>
               </div>
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">일/공휴일</dt>
-                <dd>{SITE.businessHours.sunday}</dd>
+                <dd>{sunday}</dd>
               </div>
             </dl>
           </AccordionItem>
@@ -233,7 +257,7 @@ export function Footer() {
         {/* ── 하단 바 ── */}
         <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-white/50">
           <p>
-            © {year} {SITE.name}. All rights reserved.
+            © {year} {settings.firm_name}. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link
