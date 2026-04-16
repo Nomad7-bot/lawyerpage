@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { buttonStyles } from "@/components/ui/Button";
-import { ATTORNEYS, ATTORNEYS_DETAIL } from "@/constants/dummy";
+import { getAttorneys } from "@/lib/supabase/queries";
+import type { AttorneyWithAreas } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "변호사 소개",
   description:
-    "각 분야 최고의 전문가가 함께합니다. 법률사무소 전문 변호사 5명의 프로필을 확인하세요.",
+    "각 분야 최고의 전문가가 함께합니다. 법률사무소 전문 변호사들의 프로필을 확인하세요.",
   openGraph: {
     title: "변호사 소개",
     description: "각 분야 최고의 전문가가 함께합니다.",
@@ -19,20 +20,32 @@ const breadcrumbItems = [
   { label: "변호사 소개" },
 ];
 
-export default function AttorneysPage() {
-  const [featuredBase, ...restBase] = ATTORNEYS;
-  const featured = ATTORNEYS_DETAIL[featuredBase.slug];
-  const gridAttorneys = restBase.map((a) => ATTORNEYS_DETAIL[a.slug]);
+function toSpecialties(attorney: AttorneyWithAreas): string[] {
+  return attorney.attorney_practice_areas
+    .map((rel) => rel.practice_areas?.name)
+    .filter((v): v is string => Boolean(v));
+}
+
+export default async function AttorneysPage() {
+  const attorneys = await getAttorneys();
+
+  if (attorneys.length === 0) {
+    return (
+      <main className="container-content py-24 text-center">
+        <p className="text-body text-text-sub">등록된 변호사가 없습니다.</p>
+      </main>
+    );
+  }
+
+  const [featured, ...gridAttorneys] = attorneys;
+  const featuredSpecs = toSpecialties(featured);
 
   return (
     <main>
       {/* Page Header Banner */}
       <section className="bg-primary flex flex-col justify-center min-h-[320px]">
         <div className="container-content py-12">
-          <Breadcrumb
-            items={breadcrumbItems}
-            variant="dark"
-          />
+          <Breadcrumb items={breadcrumbItems} variant="dark" />
           <h1 className="mt-6 text-h1 font-bold text-bg-white">변호사 소개</h1>
           <p className="mt-3 text-body text-bg-white/70">
             각 분야 최고의 전문가가 함께합니다.
@@ -62,11 +75,13 @@ export default function AttorneysPage() {
                 <h2 className="mt-2 text-h2 font-bold text-primary">
                   {featured.name}
                 </h2>
-                <p className="mt-4 text-body text-text-sub italic">
-                  &ldquo;{featured.intro}&rdquo;
-                </p>
+                {featured.intro && (
+                  <p className="mt-4 text-body text-text-sub italic">
+                    &ldquo;{featured.intro}&rdquo;
+                  </p>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {featured.specialties.map((s) => (
+                  {featuredSpecs.map((s) => (
                     <span
                       key={s}
                       className="text-caption px-3 py-1 bg-bg-light text-text-main"
@@ -76,7 +91,9 @@ export default function AttorneysPage() {
                   ))}
                 </div>
                 <div className="mt-8">
-                  <span className={buttonStyles({ variant: "primary", size: "md" })}>
+                  <span
+                    className={buttonStyles({ variant: "primary", size: "md" })}
+                  >
                     프로필 보기
                   </span>
                 </div>
@@ -85,45 +102,50 @@ export default function AttorneysPage() {
           </Link>
 
           {/* 2×2 그리드 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {gridAttorneys.map((attorney) => (
-              <Link
-                key={attorney.slug}
-                href={`/attorneys/${attorney.slug}`}
-                className="group block"
-                aria-label={`${attorney.name} 변호사 프로필 보기`}
-              >
-                <div className="bg-bg-white rounded-card overflow-hidden transition-shadow duration-200 group-hover:shadow-lg border-b-4 border-transparent group-hover:border-accent">
-                  {/* 사진 (1:1.2 비율 = 5:6) */}
-                  <div className="aspect-[5/6] bg-primary/10 flex items-center justify-center">
-                    <span className="text-h1 font-bold text-primary/20">
-                      {attorney.name[0]}
-                    </span>
-                  </div>
-
-                  {/* 정보 */}
-                  <div className="p-6">
-                    <p className="text-caption font-semibold text-accent">
-                      {attorney.position}
-                    </p>
-                    <h3 className="mt-1 text-h4 font-semibold text-primary">
-                      {attorney.name}
-                    </h3>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {attorney.specialties.map((s) => (
-                        <span
-                          key={s}
-                          className="text-caption px-2 py-0.5 bg-bg-light text-text-main"
-                        >
-                          {s}
+          {gridAttorneys.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {gridAttorneys.map((attorney) => {
+                const specs = toSpecialties(attorney);
+                return (
+                  <Link
+                    key={attorney.slug}
+                    href={`/attorneys/${attorney.slug}`}
+                    className="group block"
+                    aria-label={`${attorney.name} 변호사 프로필 보기`}
+                  >
+                    <div className="bg-bg-white rounded-card overflow-hidden transition-shadow duration-200 group-hover:shadow-lg border-b-4 border-transparent group-hover:border-accent">
+                      {/* 사진 (1:1.2 비율 = 5:6) */}
+                      <div className="aspect-[5/6] bg-primary/10 flex items-center justify-center">
+                        <span className="text-h1 font-bold text-primary/20">
+                          {attorney.name[0]}
                         </span>
-                      ))}
+                      </div>
+
+                      {/* 정보 */}
+                      <div className="p-6">
+                        <p className="text-caption font-semibold text-accent">
+                          {attorney.position}
+                        </p>
+                        <h3 className="mt-1 text-h4 font-semibold text-primary">
+                          {attorney.name}
+                        </h3>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {specs.map((s) => (
+                            <span
+                              key={s}
+                              className="text-caption px-2 py-0.5 bg-bg-light text-text-main"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
     </main>

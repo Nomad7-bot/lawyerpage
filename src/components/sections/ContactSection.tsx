@@ -7,7 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { buttonStyles } from "@/components/ui/Button";
-import { SITE } from "@/constants/site";
+import type { SiteSettings } from "@/types/database";
 
 type ContactRowProps = {
   icon: LucideIcon;
@@ -41,7 +41,16 @@ function ContactRow({ icon: Icon, label, value, href }: ContactRowProps) {
   );
 }
 
-export function ContactSection() {
+type ContactSectionProps = {
+  settings: SiteSettings;
+};
+
+export function ContactSection({ settings }: ContactSectionProps) {
+  const phoneDisplay = settings.phone_display ?? settings.phone;
+  const email = settings.email ?? "";
+  const weekday = settings.business_hours?.weekday ?? "";
+  const saturday = settings.business_hours?.saturday ?? "";
+
   return (
     <section className="py-16 md:py-22 bg-primary text-white">
       <div className="container-content">
@@ -58,27 +67,25 @@ export function ContactSection() {
         <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           {/* 연락처 정보 */}
           <div className="space-y-5 md:space-y-6">
-            <ContactRow
-              icon={MapPin}
-              label="주소"
-              value={SITE.nap.address}
-            />
+            <ContactRow icon={MapPin} label="주소" value={settings.address} />
             <ContactRow
               icon={Phone}
               label="전화"
-              value={SITE.nap.phoneDisplay}
-              href={`tel:${SITE.nap.phone}`}
+              value={phoneDisplay}
+              href={`tel:${settings.phone}`}
             />
-            <ContactRow
-              icon={Mail}
-              label="이메일"
-              value={SITE.nap.email}
-              href={`mailto:${SITE.nap.email}`}
-            />
+            {email && (
+              <ContactRow
+                icon={Mail}
+                label="이메일"
+                value={email}
+                href={`mailto:${email}`}
+              />
+            )}
             <ContactRow
               icon={Clock}
               label="영업시간"
-              value={`평일 ${SITE.businessHours.weekday} · 토 ${SITE.businessHours.saturday}`}
+              value={`평일 ${weekday} · 토 ${saturday}`}
             />
 
             <div className="pt-2">

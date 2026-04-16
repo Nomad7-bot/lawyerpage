@@ -1,7 +1,8 @@
 /**
- * 상담분야 선택 옵션
- * PRACTICE_AREAS(dummy.ts)와 동일한 분류를 유지합니다.
- * Phase 2: Supabase practice_areas 테이블에서 동적으로 조회하도록 교체
+ * 상담분야 선택 옵션 (예약 폼의 클라이언트 사이드 기본값)
+ * 실제 조회·예약 저장 시에는 Supabase practice_areas 테이블을
+ * usePracticeAreas() 훅으로 불러와 사용한다.
+ * 이 상수는 API 실패 시 폴백 / 레거시 호환용으로만 유지.
  */
 export const TOPIC_OPTIONS = [
   { value: "민사소송", label: "민사소송" },

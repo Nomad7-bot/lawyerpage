@@ -3,18 +3,25 @@ import Link from "next/link";
 import { MapPin, Phone, Clock, Mail, Train, Bus, Car } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { buttonStyles } from "@/components/ui/Button";
-import { SITE } from "@/constants/site";
+import { getSiteSettings } from "@/lib/supabase/queries";
 
-export const metadata: Metadata = {
-  title: "오시는 길",
-  description: `${SITE.nap.name} 위치 안내. ${SITE.nap.address}. 전화: ${SITE.nap.phone}`,
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const name = settings?.firm_name ?? "법률사무소";
+  const address = settings?.address ?? "";
+  const phone = settings?.phone_display ?? settings?.phone ?? "";
+  return {
     title: "오시는 길",
-    description: `${SITE.nap.name} 위치 및 연락처 안내.`,
-  },
-};
+    description: `${name} 위치 안내. ${address}. 전화: ${phone}`,
+    openGraph: {
+      title: "오시는 길",
+      description: `${name} 위치 및 연락처 안내.`,
+    },
+  };
+}
 
-// 교통편 더미 데이터 (site.ts NAP 기준: 서초구 서초대로)
+// 교통편 정보 — 추후 DB (또는 별도 모델)로 이관 예정.
+// 현재는 사무소 위치 기반 정적 정보.
 const TRANSPORT = [
   {
     Icon: Train,
@@ -52,14 +59,30 @@ const TRANSPORT = [
   },
 ];
 
-const HOURS = [
-  { day: "평일", time: SITE.businessHours.weekday },
-  { day: "토요일", time: SITE.businessHours.saturday },
-  { day: "일요일·공휴일", time: SITE.businessHours.sunday },
-];
+export default async function ContactPage() {
+  const settings = await getSiteSettings();
 
-export default function ContactPage() {
-  const { nap } = SITE;
+  if (!settings) {
+    return (
+      <main className="container-content py-24 text-center">
+        <p className="text-body text-text-sub">사무소 정보를 불러오지 못했습니다.</p>
+      </main>
+    );
+  }
+
+  const phoneDisplay = settings.phone_display ?? settings.phone;
+  const phoneTel = settings.phone.replace(/-/g, "");
+  const email = settings.email ?? "";
+  const fax = settings.fax ?? "";
+  const weekday = settings.business_hours?.weekday ?? "";
+  const saturday = settings.business_hours?.saturday ?? "";
+  const sunday = settings.business_hours?.sunday ?? "휴무";
+
+  const HOURS = [
+    { day: "평일", time: weekday },
+    { day: "토요일", time: saturday },
+    { day: "일요일·공휴일", time: sunday },
+  ];
 
   return (
     <main>
@@ -71,9 +94,7 @@ export default function ContactPage() {
             variant="dark"
           />
           <h1 className="mt-6 text-h1 font-bold text-bg-white">오시는 길</h1>
-          <p className="mt-3 text-body text-bg-white/70">
-            {nap.address}
-          </p>
+          <p className="mt-3 text-body text-bg-white/70">{settings.address}</p>
         </div>
       </section>
 
@@ -86,7 +107,7 @@ export default function ContactPage() {
             Google Maps (API 키 연결 후 활성화)
           </p>
           <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(nap.address)}`}
+            href={`https://maps.google.com/?q=${encodeURIComponent(settings.address)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-caption text-primary-light underline hover:text-primary transition-colors"
@@ -110,7 +131,7 @@ export default function ContactPage() {
                     주소
                   </p>
                   <address className="not-italic mt-1 text-body text-bg-white">
-                    {nap.address}
+                    {settings.address}
                   </address>
                 </div>
               </div>
@@ -126,10 +147,10 @@ export default function ContactPage() {
                     전화
                   </p>
                   <a
-                    href={`tel:${nap.phone.replace(/-/g, "")}`}
+                    href={`tel:${phoneTel}`}
                     className="mt-1 text-body text-bg-white hover:text-accent transition-colors"
                   >
-                    {nap.phoneDisplay}
+                    {phoneDisplay}
                   </a>
                 </div>
               </div>
@@ -144,11 +165,9 @@ export default function ContactPage() {
                   <p className="text-caption font-semibold text-bg-white/60 uppercase tracking-wide">
                     영업시간
                   </p>
-                  <p className="mt-1 text-body text-bg-white">
-                    평일 {SITE.businessHours.weekday}
-                  </p>
+                  <p className="mt-1 text-body text-bg-white">평일 {weekday}</p>
                   <p className="text-caption text-bg-white/60">
-                    토 {SITE.businessHours.saturday} / 일·공휴일 휴무
+                    토 {saturday} / 일·공휴일 {sunday === "휴무" ? "휴무" : sunday}
                   </p>
                 </div>
               </div>
@@ -161,7 +180,7 @@ export default function ContactPage() {
       <section className="py-16 md:py-22 bg-bg-white">
         <div className="container-content">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
-            {/* ── 왼쪽: 찾아오시는 방법 (6컬럼) ── */}
+            {/* ── 왼쪽: 찾아오시는 방법 (7컬럼) ── */}
             <div className="md:col-span-7">
               <h2 className="text-h3 font-semibold text-primary">
                 찾아오시는 방법
@@ -176,10 +195,7 @@ export default function ContactPage() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <Icon
-                          className="w-5 h-5 text-primary"
-                          aria-hidden
-                        />
+                        <Icon className="w-5 h-5 text-primary" aria-hidden />
                       </div>
                       <h3 className="text-h4 font-semibold text-primary">
                         {label}
@@ -211,7 +227,7 @@ export default function ContactPage() {
                   법률사무소
                 </p>
                 <h2 className="mt-1 text-h3 font-bold text-bg-white">
-                  {nap.name}
+                  {settings.firm_name}
                 </h2>
 
                 {/* 연락처 항목 */}
@@ -222,11 +238,15 @@ export default function ContactPage() {
                       aria-hidden
                     />
                     <address className="not-italic text-body text-bg-white/85">
-                      {nap.address}
-                      <br />
-                      <span className="text-caption text-bg-white/60">
-                        우편번호 {nap.postalCode}
-                      </span>
+                      {settings.address}
+                      {settings.postal_code && (
+                        <>
+                          <br />
+                          <span className="text-caption text-bg-white/60">
+                            우편번호 {settings.postal_code}
+                          </span>
+                        </>
+                      )}
                     </address>
                   </div>
 
@@ -237,34 +257,43 @@ export default function ContactPage() {
                     />
                     <div>
                       <a
-                        href={`tel:${nap.phone.replace(/-/g, "")}`}
+                        href={`tel:${phoneTel}`}
                         className="text-body text-bg-white hover:text-accent transition-colors"
                       >
-                        {nap.phoneDisplay}
+                        {phoneDisplay}
                       </a>
-                      <span className="mx-2 text-bg-white/30">|</span>
-                      <span className="text-caption text-bg-white/60">
-                        팩스 {nap.fax}
-                      </span>
+                      {fax && (
+                        <>
+                          <span className="mx-2 text-bg-white/30">|</span>
+                          <span className="text-caption text-bg-white/60">
+                            팩스 {fax}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Mail
-                      className="w-5 h-5 text-accent shrink-0"
-                      aria-hidden
-                    />
-                    <a
-                      href={`mailto:${nap.email}`}
-                      className="text-body text-bg-white hover:text-accent transition-colors"
-                    >
-                      {nap.email}
-                    </a>
-                  </div>
+                  {email && (
+                    <div className="flex items-center gap-3">
+                      <Mail
+                        className="w-5 h-5 text-accent shrink-0"
+                        aria-hidden
+                      />
+                      <a
+                        href={`mailto:${email}`}
+                        className="text-body text-bg-white hover:text-accent transition-colors"
+                      >
+                        {email}
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* 구분선 */}
-                <div className="my-6 border-t border-bg-white/10" aria-hidden />
+                <div
+                  className="my-6 border-t border-bg-white/10"
+                  aria-hidden
+                />
 
                 {/* 영업시간 테이블 */}
                 <div>
@@ -277,10 +306,11 @@ export default function ContactPage() {
                   <table className="w-full text-body" aria-label="영업시간">
                     <tbody>
                       {HOURS.map(({ day, time }) => (
-                        <tr key={day} className="border-b border-bg-white/10 last:border-0">
-                          <td className="py-2 text-bg-white/70 w-28">
-                            {day}
-                          </td>
+                        <tr
+                          key={day}
+                          className="border-b border-bg-white/10 last:border-0"
+                        >
+                          <td className="py-2 text-bg-white/70 w-28">{day}</td>
                           <td
                             className={
                               time === "휴무"

@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { InsightFilterTabs } from "@/components/sections/InsightFilterTabs";
-import { INSIGHTS } from "@/constants/dummy";
+import { getPostCategories, getPosts } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = {
@@ -24,9 +24,9 @@ interface Props {
   searchParams: Promise<{ category?: string; page?: string }>;
 }
 
-function buildHref(category: string, page: number) {
+function buildHref(categorySlug: string | undefined, page: number) {
   const params = new URLSearchParams();
-  if (category !== "전체") params.set("category", category);
+  if (categorySlug) params.set("category", categorySlug);
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/insights?${qs}` : "/insights";
@@ -41,19 +41,22 @@ function formatDate(iso: string) {
 }
 
 export default async function InsightsPage({ searchParams }: Props) {
-  const { category = "전체", page = "1" } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page, 10));
+  const sp = await searchParams;
+  const categorySlug = sp.category;
+  const currentPage = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
-  const filtered =
-    category === "전체"
-      ? INSIGHTS
-      : INSIGHTS.filter((item) => item.category === category);
+  const [{ posts, totalCount }, categories] = await Promise.all([
+    getPosts({
+      category: categorySlug,
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    }),
+    getPostCategories(),
+  ]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const offset = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
-  const pageItems = filtered.slice(offset, offset + ITEMS_PER_PAGE);
-  const [featured, ...gridItems] = pageItems;
+  const [featured, ...gridItems] = posts;
 
   return (
     <main>
@@ -74,9 +77,12 @@ export default async function InsightsPage({ searchParams }: Props) {
       <section className="py-12 md:py-16 bg-bg-white">
         <div className="container-content">
           {/* 카테고리 필터 탭 */}
-          <InsightFilterTabs activeCategory={category} />
+          <InsightFilterTabs
+            categories={categories}
+            activeSlug={categorySlug}
+          />
 
-          {filtered.length === 0 ? (
+          {posts.length === 0 ? (
             <p className="mt-16 text-center text-body text-text-sub">
               해당 카테고리의 게시글이 없습니다.
             </p>
@@ -102,21 +108,29 @@ export default async function InsightsPage({ searchParams }: Props) {
                     </div>
                     {/* 내용 */}
                     <div className="flex flex-col justify-center p-8 md:p-10">
-                      <Badge variant="category">{featured.category}</Badge>
+                      {featured.category && (
+                        <Badge variant="category">
+                          {featured.category.name}
+                        </Badge>
+                      )}
                       <h2 className="mt-3 text-h3 font-bold text-primary line-clamp-2 group-hover:text-primary-light transition-colors">
                         {featured.title}
                       </h2>
-                      <p className="mt-2 text-body text-text-sub line-clamp-3">
-                        {featured.excerpt}
-                      </p>
+                      {featured.excerpt && (
+                        <p className="mt-2 text-body text-text-sub line-clamp-3">
+                          {featured.excerpt}
+                        </p>
+                      )}
                       <div className="mt-4 flex items-center gap-3 text-caption text-text-sub">
-                        {featured.readingTime && (
+                        {featured.reading_time && (
                           <span className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" aria-hidden />
-                            {featured.readingTime}분 읽기
+                            {featured.reading_time}분 읽기
                           </span>
                         )}
-                        <span>{formatDate(featured.publishedAt)}</span>
+                        {featured.published_at && (
+                          <span>{formatDate(featured.published_at)}</span>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -133,7 +147,11 @@ export default async function InsightsPage({ searchParams }: Props) {
                       className="group block"
                       aria-label={`${item.title} 자세히 보기`}
                     >
-                      <Card hover className="h-full flex flex-col" padding="none">
+                      <Card
+                        hover
+                        className="h-full flex flex-col"
+                        padding="none"
+                      >
                         {/* 썸네일 */}
                         <div className="aspect-video bg-primary/10 flex items-center justify-center overflow-hidden">
                           <span className="text-h2 font-bold text-primary/20">
@@ -142,23 +160,29 @@ export default async function InsightsPage({ searchParams }: Props) {
                         </div>
                         {/* 내용 */}
                         <div className="flex flex-col flex-1 p-5">
-                          <Badge variant="category" className="self-start">
-                            {item.category}
-                          </Badge>
+                          {item.category && (
+                            <Badge variant="category" className="self-start">
+                              {item.category.name}
+                            </Badge>
+                          )}
                           <h3 className="mt-2 text-body font-semibold text-primary line-clamp-2 group-hover:text-primary-light transition-colors">
                             {item.title}
                           </h3>
-                          <p className="mt-1.5 text-caption text-text-sub line-clamp-2 flex-1">
-                            {item.excerpt}
-                          </p>
+                          {item.excerpt && (
+                            <p className="mt-1.5 text-caption text-text-sub line-clamp-2 flex-1">
+                              {item.excerpt}
+                            </p>
+                          )}
                           <div className="mt-3 flex items-center gap-2 text-caption text-text-sub">
-                            {item.readingTime && (
+                            {item.reading_time && (
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" aria-hidden />
-                                {item.readingTime}분
+                                {item.reading_time}분
                               </span>
                             )}
-                            <span>{formatDate(item.publishedAt)}</span>
+                            {item.published_at && (
+                              <span>{formatDate(item.published_at)}</span>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -174,7 +198,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                   className="mt-12 flex items-center justify-center gap-1"
                 >
                   <Link
-                    href={buildHref(category, safeCurrentPage - 1)}
+                    href={buildHref(categorySlug, safeCurrentPage - 1)}
                     aria-label="이전 페이지"
                     className={cn(
                       "inline-flex items-center justify-center w-10 h-10 text-text-sub hover:text-primary hover:bg-bg-light transition-colors",
@@ -189,9 +213,11 @@ export default async function InsightsPage({ searchParams }: Props) {
                     (p) => (
                       <Link
                         key={p}
-                        href={buildHref(category, p)}
+                        href={buildHref(categorySlug, p)}
                         aria-label={`${p}페이지`}
-                        aria-current={p === safeCurrentPage ? "page" : undefined}
+                        aria-current={
+                          p === safeCurrentPage ? "page" : undefined
+                        }
                         className={cn(
                           "inline-flex items-center justify-center w-10 h-10 text-body transition-colors",
                           p === safeCurrentPage
@@ -205,7 +231,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                   )}
 
                   <Link
-                    href={buildHref(category, safeCurrentPage + 1)}
+                    href={buildHref(categorySlug, safeCurrentPage + 1)}
                     aria-label="다음 페이지"
                     className={cn(
                       "inline-flex items-center justify-center w-10 h-10 text-text-sub hover:text-primary hover:bg-bg-light transition-colors",
