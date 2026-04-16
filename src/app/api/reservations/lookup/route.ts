@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { lookupReservationSchema } from "@/lib/schemas/reservation";
 import type { ReservationLookupResult } from "@/types";
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const { reservation_no, client_phone } = parsed.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("reservations")

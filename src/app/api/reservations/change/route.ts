@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { changeReservationSchema } from "@/lib/schemas/reservation";
 import { sendEmail } from "@/lib/email";
 import { sendSMS } from "@/lib/sms";
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     const { reservation_no, client_phone, new_date, new_time } = parsed.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. 예약 조회 (알림용 기존 일시 포함)
     const { data: reservation, error: findError } = await supabase

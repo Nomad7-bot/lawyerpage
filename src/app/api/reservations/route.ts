@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createReservationSchema } from "@/lib/schemas/reservation";
 import { sendEmail } from "@/lib/email";
 import { sendSMS } from "@/lib/sms";
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       preferred_time,
     } = parsed.data;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. 중복 예약 체크 (동일 변호사 + 날짜 + 시간, PENDING/CONFIRMED)
     let duplicateQuery = supabase
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
  * 예약번호 생성: R-YYYYMMDD-XXX (당일 순번 기반)
  */
 async function generateReservationNo(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
   date: string
 ): Promise<string> {
   const dateCompact = date.replace(/-/g, "");

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSlotsQuerySchema } from "@/lib/schemas/reservation";
 import type { TimeSlot } from "@/types";
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const [y, m, d] = date.split("-").map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay();
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. 해당 변호사의 해당 요일 available_slots 조회
     const { data: slots, error: slotsError } = await supabase
