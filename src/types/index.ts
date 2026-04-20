@@ -76,3 +76,9 @@ export type ApiErrorResponse = {
   error: string;
   details?: Record<string, string[]>;
 };
+
+// 관리자 사용자 (useAuth 훅 반환 타입)
+export type AdminUser = {
+  id: string;
+  email: string | null;
+};
