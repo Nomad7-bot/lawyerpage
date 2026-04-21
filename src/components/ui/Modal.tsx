@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-type ModalSize = "sm" | "md" | "lg";
+type ModalSize = "sm" | "md" | "lg" | "xl";
 
 type ModalProps = {
   isOpen: boolean;
@@ -19,6 +19,7 @@ const sizeStyles: Record<ModalSize, string> = {
   sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-2xl",
+  xl: "max-w-xl",
 };
 
 export function Modal({

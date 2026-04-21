@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { ToastProvider } from "@/components/admin/ToastProvider";
 
 /**
  * 관리자 공통 레이아웃
@@ -11,6 +12,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
  *   Suspense 경계 내부에서 사용해야 정적 prerender 경고 없음
  * - `/admin/login` 페이지는 자체 `fixed inset-0 z-50` 으로 이 레이아웃을 덮음
  * - 인증 가드는 src/middleware.ts 가 담당 (이 레이아웃에서 별도 처리 불요)
+ * - ToastProvider: 예약 상태 변경 등 관리자 액션 피드백 공용 토스트
  */
 export default function AdminLayout({
   children,
@@ -18,8 +20,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={null}>
-      <AdminShell>{children}</AdminShell>
-    </Suspense>
+    <ToastProvider>
+      <Suspense fallback={null}>
+        <AdminShell>{children}</AdminShell>
+      </Suspense>
+    </ToastProvider>
   );
 }
