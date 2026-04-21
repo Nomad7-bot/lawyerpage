@@ -3,6 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, Clock, Tag } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildArticleSchema } from "@/lib/schema";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
+import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { buttonStyles } from "@/components/ui/Button";
@@ -16,11 +21,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const article = INSIGHTS_DETAIL[slug];
   if (!article) return {};
-  return {
-    title: article.title,
-    description: article.excerpt,
-    openGraph: { title: article.title, description: article.excerpt },
-  };
+
+  // DB row 조회 — posts 는 meta_title/meta_description/og_image 3종 모두 지원
+  let dbRow: {
+    meta_title: string | null;
+    meta_description: string | null;
+    og_image: string | null;
+  } | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("posts")
+      .select("meta_title, meta_description, og_image")
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .maybeSingle();
+    dbRow = data;
+  } catch {
+    dbRow = null;
+  }
+
+  return buildMetadata({
+    pageName: "insight-detail",
+    path: `/insights/${slug}`,
+    dbRow,
+    fallback: {
+      title: article.title,
+      description: article.excerpt,
+    },
+  });
 }
 
 function formatDate(iso: string) {
@@ -46,19 +75,33 @@ export default async function InsightDetailPage({ params }: Props) {
   // 하단 관련 법률정보 3건 (카테고리 무관, 최신순)
   const bottomRelated = INSIGHTS.filter((a) => a.slug !== article.slug).slice(0, 3);
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "법률정보", href: "/insights" },
+    {
+      label: article.category,
+      href: `/insights?category=${encodeURIComponent(article.category)}`,
+    },
+    { label: article.title },
+  ];
+
+  const articleSchema = buildArticleSchema({
+    slug: article.slug,
+    title: article.title,
+    excerpt: article.excerpt,
+    publishedAt: article.publishedAt,
+    authorName: author?.name ?? "법률사무소",
+    authorSlug: author?.slug,
+  });
+
   return (
     <main>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <JsonLd data={articleSchema} id="schema-article" />
       {/* ── 헤더 영역 ── */}
       <section className="bg-bg-white border-b border-bg-light py-12 md:py-16">
         <div className="container-content max-w-[1080px]">
-          <Breadcrumb
-            items={[
-              { label: "홈", href: "/" },
-              { label: "법률정보", href: "/insights" },
-              { label: article.category, href: `/insights?category=${encodeURIComponent(article.category)}` },
-              { label: article.title },
-            ]}
-          />
+          <Breadcrumb items={breadcrumbItems} />
 
           <div className="mt-6 flex items-center gap-2">
             <Badge variant="category">{article.category}</Badge>

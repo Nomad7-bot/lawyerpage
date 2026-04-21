@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
 import { PRACTICE_AREAS } from "@/constants/dummy";
 
-export const metadata: Metadata = {
-  title: "업무분야",
-  description:
-    "분야별 전문 변호사가 최적의 법률 서비스를 제공합니다. 민사소송, 형사사건, 가사·이혼, 기업법무, 부동산, 노동·산재 전문.",
-  openGraph: {
-    title: "업무분야",
-    description: "분야별 전문 변호사가 최적의 법률 서비스를 제공합니다.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    pageName: "practice-areas",
+    path: "/practice-areas",
+    fallback: {
+      title: "업무분야",
+      description:
+        "분야별 전문 변호사가 최적의 법률 서비스를 제공합니다. 민사소송, 형사사건, 가사·이혼, 기업법무, 부동산, 노동·산재 전문.",
+    },
+  });
+}
 
 const breadcrumbItems = [
   { label: "홈", href: "/" },
@@ -23,19 +26,11 @@ const breadcrumbItems = [
 export default function PracticeAreasPage() {
   return (
     <main>
-      {/* Page Header Banner */}
-      <section className="bg-primary flex flex-col justify-center min-h-[320px]">
-        <div className="container-content py-12">
-          <Breadcrumb
-            items={breadcrumbItems}
-            variant="dark"
-          />
-          <h1 className="mt-6 text-h1 font-bold text-bg-white">업무분야</h1>
-          <p className="mt-3 text-body text-bg-white/70">
-            분야별 전문 변호사가 최적의 법률 서비스를 제공합니다.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        breadcrumbItems={breadcrumbItems}
+        title="업무분야"
+        subtitle="분야별 전문 변호사가 최적의 법률 서비스를 제공합니다."
+      />
 
       {/* 카드 그리드 */}
       <section className="py-16 md:py-22 bg-bg-light">

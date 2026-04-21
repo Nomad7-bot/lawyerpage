@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import type {
   AttorneyListItem,
   PracticeAreaListItem,
@@ -27,33 +26,17 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 // ── 변호사 목록 조회 ─────────────────────────────────────────
+// 브라우저 직접 Supabase 호출 시 모바일 Safari/ITP/콘텐츠 차단으로 실패하는
+// 사례가 있어, 다른 훅들과 동일하게 same-origin `/api/*` 경유로 통일.
 
 export function useAttorneys() {
   return useQuery<AttorneyListItem[]>({
     queryKey: ["attorneys"],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("attorneys")
-        .select("id, name, slug, position, attorney_practice_areas(practice_areas(name))")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (error) throw new Error("변호사 목록을 불러올 수 없습니다.");
-      if (!data) return [];
-
-      return data.map((row) => ({
-        id: row.id as string,
-        name: row.name as string,
-        slug: row.slug as string,
-        position: row.position as string,
-        specialties: (
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((row as Record<string, unknown>).attorney_practice_areas as any[] ?? [])
-        )
-          .map((apa: { practice_areas: { name: string } | null }) => apa.practice_areas?.name)
-          .filter((n: string | undefined): n is string => !!n),
-      }));
+      const result = await apiFetch<{ attorneys: AttorneyListItem[] }>(
+        "/api/attorneys"
+      );
+      return result.attorneys;
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -65,15 +48,10 @@ export function usePracticeAreas() {
   return useQuery<PracticeAreaListItem[]>({
     queryKey: ["practiceAreas"],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("practice_areas")
-        .select("id, name, slug")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-
-      if (error) throw new Error("상담분야 목록을 불러올 수 없습니다.");
-      return (data ?? []) as PracticeAreaListItem[];
+      const result = await apiFetch<{ practice_areas: PracticeAreaListItem[] }>(
+        "/api/practice-areas"
+      );
+      return result.practice_areas;
     },
     staleTime: 5 * 60 * 1000,
   });

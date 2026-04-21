@@ -116,11 +116,11 @@ export function Header() {
             </Link>
           </div>
 
-          {/* 모바일 우측 버튼 */}
+          {/* 모바일 우측 버튼 — WCAG AA 터치 타깃 44x44 이상 */}
           <div className="flex md:hidden items-center gap-1">
             <a
               href={`tel:${SITE.nap.phone}`}
-              className="h-10 w-10 inline-flex items-center justify-center text-primary"
+              className="h-11 w-11 inline-flex items-center justify-center text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="전화 상담"
             >
               <Phone className="h-5 w-5" aria-hidden />
@@ -130,7 +130,8 @@ export function Header() {
               onClick={() => setMenuOpen(true)}
               aria-label="메뉴 열기"
               aria-expanded={menuOpen}
-              className="h-10 w-10 inline-flex items-center justify-center text-primary"
+              aria-controls="mobile-nav-panel"
+              className="h-11 w-11 inline-flex items-center justify-center text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Menu className="h-6 w-6" aria-hidden />
             </button>
@@ -152,6 +153,7 @@ export function Header() {
 
       {/* ── 모바일 메뉴 패널 (오른쪽 슬라이드인) ── */}
       <div
+        id="mobile-nav-panel"
         className={cn(
           "fixed top-0 right-0 z-50 h-full w-[280px] bg-primary flex flex-col",
           "transition-transform duration-300 ease-in-out",
@@ -176,7 +178,7 @@ export function Header() {
             type="button"
             onClick={() => setMenuOpen(false)}
             aria-label="메뉴 닫기"
-            className="h-10 w-10 inline-flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            className="h-11 w-11 inline-flex items-center justify-center text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>

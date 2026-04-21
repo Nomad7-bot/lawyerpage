@@ -1,13 +1,45 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import dynamic from "next/dynamic";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { StepIndicator } from "@/components/reservation/StepIndicator";
 import { Step1Attorney } from "@/components/reservation/Step1Attorney";
-import { Step2Schedule } from "@/components/reservation/Step2Schedule";
-import { Step3Info } from "@/components/reservation/Step3Info";
-import { Step4Confirm } from "@/components/reservation/Step4Confirm";
 import { useReservationStore } from "@/store/reservationStore";
+
+// CLS 방지용 placeholder — 스텝 전환 시 높이 유지 (INP/레이아웃 안정)
+function StepSkeleton() {
+  return (
+    <div
+      className="min-h-[480px] animate-pulse space-y-4 rounded-card bg-bg-light/60 p-6"
+      aria-hidden
+    />
+  );
+}
+
+// 첫 화면(Step1)은 정적 import 유지 — 초기 번들에 포함되어 LCP 개선.
+// Step 2~4 는 사용자가 "다음" 을 눌러야 보이므로 동적 로드 (초기 번들에서 제거).
+const Step2Schedule = dynamic(
+  () =>
+    import("@/components/reservation/Step2Schedule").then((m) => ({
+      default: m.Step2Schedule,
+    })),
+  { ssr: false, loading: () => <StepSkeleton /> }
+);
+const Step3Info = dynamic(
+  () =>
+    import("@/components/reservation/Step3Info").then((m) => ({
+      default: m.Step3Info,
+    })),
+  { ssr: false, loading: () => <StepSkeleton /> }
+);
+const Step4Confirm = dynamic(
+  () =>
+    import("@/components/reservation/Step4Confirm").then((m) => ({
+      default: m.Step4Confirm,
+    })),
+  { ssr: false, loading: () => <StepSkeleton /> }
+);
 
 const STEP_LABELS: Record<number, string> = {
   1: "변호사 선택",
@@ -25,24 +57,19 @@ export default function ReservationPage() {
     contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [step]);
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "상담 예약" },
+  ];
+
   return (
     <main>
-      {/* Page Header Banner */}
-      <section className="bg-primary flex flex-col justify-center min-h-[200px]">
-        <div className="container-content py-10">
-          <Breadcrumb
-            items={[
-              { label: "홈", href: "/" },
-              { label: "상담 예약" },
-            ]}
-            variant="dark"
-          />
-          <h1 className="mt-4 text-h1 font-bold text-bg-white">상담 예약</h1>
-          <p className="mt-2 text-body text-bg-white/70">
-            전문 변호사와의 1:1 상담을 예약하세요.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        breadcrumbItems={breadcrumbItems}
+        title="상담 예약"
+        subtitle="전문 변호사와의 1:1 상담을 예약하세요."
+        size="sm"
+      />
 
       {/* 폼 영역 */}
       <section className="py-12 md:py-16 bg-bg-white" ref={contentRef}>

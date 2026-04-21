@@ -3,6 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildPersonSchema } from "@/lib/schema";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { buttonStyles } from "@/components/ui/Button";
@@ -16,14 +20,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const attorney = ATTORNEYS_DETAIL[slug];
   if (!attorney) return {};
-  return {
-    title: `${attorney.name} ${attorney.position}`,
-    description: attorney.intro,
-    openGraph: {
-      title: `${attorney.name} ${attorney.position}`,
-      description: attorney.intro,
-    },
-  };
+
+  // attorneys 테이블에 meta_* 컬럼 없음 — 더미/본문에서 파생
+  const title = `${attorney.name} ${attorney.position}`;
+  const description =
+    attorney.intro ?? attorney.bio.slice(0, 150);
+
+  return buildMetadata({
+    pageName: "attorney-detail",
+    path: `/attorneys/${slug}`,
+    fallback: { title, description },
+  });
 }
 
 export default async function AttorneyDetailPage({ params }: Props) {
@@ -32,8 +39,25 @@ export default async function AttorneyDetailPage({ params }: Props) {
 
   if (!attorney) notFound();
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "변호사 소개", href: "/attorneys" },
+    { label: attorney.name },
+  ];
+
+  const personSchema = buildPersonSchema({
+    slug: attorney.slug,
+    name: attorney.name,
+    position: attorney.position,
+    specialties: attorney.specialties,
+    intro: attorney.intro,
+    bio: attorney.bio,
+  });
+
   return (
     <main>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <JsonLd data={personSchema} id="schema-person" />
       {/* ── Hero: navy 배경, 2컬럼 ── */}
       <section className="bg-primary">
         <div className="container-content">
@@ -47,14 +71,7 @@ export default async function AttorneyDetailPage({ params }: Props) {
 
             {/* 텍스트 */}
             <div className="flex flex-col justify-center py-12 md:py-16 md:pl-12">
-              <Breadcrumb
-                items={[
-                  { label: "홈", href: "/" },
-                  { label: "변호사 소개", href: "/attorneys" },
-                  { label: attorney.name },
-                ]}
-                variant="dark"
-              />
+              <Breadcrumb items={breadcrumbItems} variant="dark" />
 
               <span className="mt-5 text-caption font-bold text-accent uppercase tracking-widest">
                 {attorney.position}

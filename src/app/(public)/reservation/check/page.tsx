@@ -10,7 +10,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -336,26 +336,21 @@ export default function ReservationCheckPage() {
 
   const statusConfig = result ? STATUS_CONFIG[result.status] : null;
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "상담 예약", href: "/reservation" },
+    { label: "예약 조회" },
+  ];
+
   return (
     <>
       <main>
-        {/* Page Header Banner */}
-        <section className="bg-primary flex flex-col justify-center min-h-[200px]">
-          <div className="container-content py-10">
-            <Breadcrumb
-              items={[
-                { label: "홈", href: "/" },
-                { label: "상담 예약", href: "/reservation" },
-                { label: "예약 조회" },
-              ]}
-              variant="dark"
-            />
-            <h1 className="mt-4 text-h1 font-bold text-bg-white">예약 조회</h1>
-            <p className="mt-2 text-body text-bg-white/70">
-              예약번호와 연락처로 상담 예약 상태를 확인하세요.
-            </p>
-          </div>
-        </section>
+        <PageHeader
+          breadcrumbItems={breadcrumbItems}
+          title="예약 조회"
+          subtitle="예약번호와 연락처로 상담 예약 상태를 확인하세요."
+          size="sm"
+        />
 
         <section className="py-12 md:py-16 bg-bg-light min-h-[60vh]">
           <div className="container-content max-w-xl">
@@ -556,7 +551,7 @@ export default function ReservationCheckPage() {
               <button
                 type="button"
                 onClick={() => !cancelMutation.isPending && setShowCancelModal(false)}
-                className="p-1 text-text-sub hover:text-text-main transition-colors"
+                className="h-11 w-11 inline-flex items-center justify-center text-text-sub hover:text-text-main transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="닫기"
               >
                 <X className="w-5 h-5" aria-hidden />
@@ -611,7 +606,7 @@ export default function ReservationCheckPage() {
               <button
                 type="button"
                 onClick={() => !changeMutation.isPending && setShowChangeModal(false)}
-                className="p-1 text-text-sub hover:text-text-main transition-colors"
+                className="h-11 w-11 inline-flex items-center justify-center text-text-sub hover:text-text-main transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="닫기"
               >
                 <X className="w-5 h-5" aria-hidden />
