@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { InsightFilterTabs } from "@/components/sections/InsightFilterTabs";
 import { buildMetadata } from "@/lib/seo/buildMetadata";
+import { formatDateLocaleKo } from "@/lib/utils/date";
 import { INSIGHTS } from "@/constants/dummy";
 import { cn } from "@/lib/utils/cn";
 
@@ -35,14 +36,6 @@ function buildHref(category: string, page: number) {
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/insights?${qs}` : "/insights";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 export default async function InsightsPage({ searchParams }: Props) {
@@ -131,7 +124,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                             {featured.readingTime}분 읽기
                           </span>
                         )}
-                        <span>{formatDate(featured.publishedAt)}</span>
+                        <span>{formatDateLocaleKo(featured.publishedAt)}</span>
                       </div>
                     </div>
                   </Card>
@@ -173,7 +166,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                                 {item.readingTime}분
                               </span>
                             )}
-                            <span>{formatDate(item.publishedAt)}</span>
+                            <span>{formatDateLocaleKo(item.publishedAt)}</span>
                           </div>
                         </div>
                       </Card>

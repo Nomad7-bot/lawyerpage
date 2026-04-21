@@ -16,6 +16,7 @@ import { InfoRow } from "@/components/reservation/InfoRow";
 import { MiniCalendar } from "@/components/reservation/MiniCalendar";
 import { ReservationOverlay } from "@/components/reservation/ReservationOverlay";
 import { cn } from "@/lib/utils/cn";
+import { formatDateKo, formatDateLocaleKo } from "@/lib/utils/date";
 import type { ReservationStatus, ReservationLookupResult, TimeSlot } from "@/types";
 import {
   useLookupReservation,
@@ -51,22 +52,6 @@ const DEFAULT_TIME_SLOTS: TimeSlot[] = [
   { time: "16:00", available: true },
   { time: "16:30", available: true },
 ];
-
-// ── 날짜 포맷 유틸 ─────────────────────────────────────────────
-function formatDateKo(ymd: string) {
-  const [y, m, d] = ymd.split("-");
-  const date = new Date(`${y}-${m}-${d}`);
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][date.getDay()];
-  return `${y}년 ${parseInt(m)}월 ${parseInt(d)}일 (${weekday})`;
-}
-
-function formatCreatedAt(iso: string) {
-  const d = new Date(iso);
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${y}년 ${m}월 ${day}일`;
-}
 
 // ═══════════════════════════════════════════════════════════════
 // 메인 페이지
@@ -295,7 +280,7 @@ export default function ReservationCheckPage() {
                   <div className="px-6 py-2">
                     <InfoRow
                       label="신청일"
-                      value={formatCreatedAt(result.created_at)}
+                      value={formatDateLocaleKo(result.created_at)}
                     />
                     <InfoRow label="신청자" value={result.client_name} />
                     <InfoRow

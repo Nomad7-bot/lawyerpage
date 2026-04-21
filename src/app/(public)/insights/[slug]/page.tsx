@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildArticleSchema } from "@/lib/schema";
 import { buildMetadata } from "@/lib/seo/buildMetadata";
 import { createClient } from "@/lib/supabase/server";
+import { formatDateLocaleKo } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { buttonStyles } from "@/components/ui/Button";
@@ -49,14 +50,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: article.title,
       description: article.excerpt,
     },
-  });
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
   });
 }
 
@@ -107,7 +100,7 @@ export default async function InsightDetailPage({ params }: Props) {
             <Badge variant="category">{article.category}</Badge>
             <span className="text-caption text-text-sub flex items-center gap-1">
               <CalendarDays className="w-3.5 h-3.5" aria-hidden />
-              {formatDate(article.publishedAt)}
+              {formatDateLocaleKo(article.publishedAt)}
             </span>
             {article.readingTime && (
               <span className="text-caption text-text-sub flex items-center gap-1">
@@ -219,7 +212,7 @@ export default async function InsightDetailPage({ params }: Props) {
                             {rel.title}
                           </p>
                           <p className="mt-0.5 text-caption text-text-sub">
-                            {formatDate(rel.publishedAt)}
+                            {formatDateLocaleKo(rel.publishedAt)}
                           </p>
                         </Link>
                       </li>
@@ -286,7 +279,7 @@ export default async function InsightDetailPage({ params }: Props) {
                         {item.excerpt}
                       </p>
                       <p className="mt-3 text-caption text-text-sub">
-                        {formatDate(item.publishedAt)}
+                        {formatDateLocaleKo(item.publishedAt)}
                       </p>
                     </div>
                   </Card>
