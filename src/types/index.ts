@@ -160,3 +160,45 @@ export type PostCategory = {
   slug: string;
   display_order: number;
 };
+
+// ─── SEO / 사이트 설정 (Phase 3 STEP 7) ────────────────────
+
+// seo_settings 테이블 행 — 페이지별 메타
+export type SeoSetting = {
+  id: string;
+  page_name: string;
+  page_url: string;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_title: string | null;
+  og_description: string | null;
+  og_image: string | null;
+  canonical_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// 영업시간 구조 — business_hours JSONB
+export type BusinessHours = {
+  weekday: string;
+  saturday: string;
+  sunday: string;
+  holiday: string;
+};
+
+// site_settings 테이블 행 (singleton)
+export type SiteSettings = {
+  id: string;
+  firm_name: string;
+  address: string | null;
+  phone: string | null;
+  fax: string | null;
+  email: string | null;
+  business_hours: BusinessHours | null;
+  default_title_template: string | null;
+  default_description: string | null;
+  default_og_image: string | null;
+  blog_url: string | null;
+  instagram_url: string | null;
+  updated_at: string;
+};
