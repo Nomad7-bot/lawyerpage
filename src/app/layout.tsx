@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { SITE } from "@/constants/site";
 import { Providers } from "@/components/Providers";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import "./globals.css";
+
+// Search Console HTML 태그 검증 코드 — env 미설정 시 verification 필드 자체를 omit
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   title: {
@@ -28,6 +32,9 @@ export const metadata: Metadata = {
     address: false,
     email: false,
   },
+  ...(googleVerification
+    ? { verification: { google: googleVerification } }
+    : {}),
 };
 
 export default function RootLayout({
@@ -37,7 +44,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full">
+      <head>
+        {/* Pretendard CDN 조기 연결 — DNS/TLS 선행으로 폰트 로드 지연 완화 (LCP 개선) */}
+        <link
+          rel="preconnect"
+          href="https://cdn.jsdelivr.net"
+          crossOrigin="anonymous"
+        />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+      </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
+        <GoogleAnalytics />
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -68,7 +68,7 @@ export function Modal({
           <button
             onClick={onClose}
             className={cn(
-              "ml-auto p-1 text-text-sub hover:text-text-main transition-colors",
+              "ml-auto h-11 w-11 inline-flex items-center justify-center text-text-sub hover:text-text-main transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             )}
             aria-label="닫기"

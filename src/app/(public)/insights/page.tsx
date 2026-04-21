@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildFaqPageSchema } from "@/lib/schema";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { InsightFilterTabs } from "@/components/sections/InsightFilterTabs";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
+import { formatDateLocaleKo } from "@/lib/utils/date";
 import { INSIGHTS } from "@/constants/dummy";
 import { cn } from "@/lib/utils/cn";
 
-export const metadata: Metadata = {
-  title: "법률정보",
-  description:
-    "법률 뉴스, 상담 사례, 법률 용어, FAQ 등 유용한 법률 정보를 제공합니다.",
-  openGraph: {
-    title: "법률정보",
-    description: "법률 전문가가 작성한 신뢰할 수 있는 법률 정보.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    pageName: "insights",
+    path: "/insights",
+    fallback: {
+      title: "법률정보",
+      description:
+        "법률 뉴스, 상담 사례, 법률 용어, FAQ 등 유용한 법률 정보를 제공합니다.",
+    },
+  });
+}
 
 const ITEMS_PER_PAGE = 7; // 1 featured + 6 grid
 
@@ -30,14 +36,6 @@ function buildHref(category: string, page: number) {
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/insights?${qs}` : "/insights";
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 export default async function InsightsPage({ searchParams }: Props) {
@@ -55,21 +53,31 @@ export default async function InsightsPage({ searchParams }: Props) {
   const pageItems = filtered.slice(offset, offset + ITEMS_PER_PAGE);
   const [featured, ...gridItems] = pageItems;
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "법률정보" },
+  ];
+
+  // AEO: FAQ 필터일 때만 FAQPage 스키마 주입 (스팸 방지)
+  const isFaqCategory = category.toUpperCase() === "FAQ";
+  const faqSchema =
+    isFaqCategory && filtered.length > 0
+      ? buildFaqPageSchema(
+          filtered.map((item) => ({
+            question: item.title,
+            answer: item.excerpt,
+          }))
+        )
+      : null;
+
   return (
     <main>
-      {/* Page Header Banner */}
-      <section className="bg-primary flex flex-col justify-center min-h-[320px]">
-        <div className="container-content py-12">
-          <Breadcrumb
-            items={[{ label: "홈", href: "/" }, { label: "법률정보" }]}
-            variant="dark"
-          />
-          <h1 className="mt-6 text-h1 font-bold text-bg-white">법률정보</h1>
-          <p className="mt-3 text-body text-bg-white/70">
-            법률 전문가가 직접 작성한 믿을 수 있는 법률 정보를 확인하세요.
-          </p>
-        </div>
-      </section>
+      {faqSchema && <JsonLd data={faqSchema} id="schema-faq" />}
+      <PageHeader
+        breadcrumbItems={breadcrumbItems}
+        title="법률정보"
+        subtitle="법률 전문가가 직접 작성한 믿을 수 있는 법률 정보를 확인하세요."
+      />
 
       <section className="py-12 md:py-16 bg-bg-white">
         <div className="container-content">
@@ -116,7 +124,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                             {featured.readingTime}분 읽기
                           </span>
                         )}
-                        <span>{formatDate(featured.publishedAt)}</span>
+                        <span>{formatDateLocaleKo(featured.publishedAt)}</span>
                       </div>
                     </div>
                   </Card>
@@ -158,7 +166,7 @@ export default async function InsightsPage({ searchParams }: Props) {
                                 {item.readingTime}분
                               </span>
                             )}
-                            <span>{formatDate(item.publishedAt)}</span>
+                            <span>{formatDateLocaleKo(item.publishedAt)}</span>
                           </div>
                         </div>
                       </Card>

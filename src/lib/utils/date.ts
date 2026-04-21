@@ -28,6 +28,18 @@ export function formatDateTimeKo(ymd: string, time: string): string {
 }
 
 /**
+ * ISO 문자열 → "YYYY년 M월 D일" (요일 없음, Intl.DateTimeFormat 기반).
+ * 게시글 발행일, 예약 신청일 등 요일이 필요 없는 노출에 사용.
+ */
+export function formatDateLocaleKo(iso: string): string {
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/**
  * 예약번호 생성: "YYMMDD-XXXX"
  * Phase 1 전용 — Phase 2에서 서버 API로 교체
  */

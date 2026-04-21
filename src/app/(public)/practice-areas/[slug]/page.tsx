@@ -3,6 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildServiceSchema } from "@/lib/schema";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
+import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
 import { buttonStyles } from "@/components/ui/Button";
 import {
@@ -19,14 +24,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const area = PRACTICE_AREAS_DETAIL[slug];
   if (!area) return {};
-  return {
-    title: area.title,
-    description: area.description,
-    openGraph: {
+
+  // DB row 조회 시도 (meta_title/meta_description 우선) — 없으면 더미 fallback
+  let dbRow: { meta_title: string | null; meta_description: string | null } | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("practice_areas")
+      .select("meta_title, meta_description")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
+    dbRow = data;
+  } catch {
+    dbRow = null;
+  }
+
+  return buildMetadata({
+    pageName: "practice-area-detail",
+    path: `/practice-areas/${slug}`,
+    dbRow,
+    fallback: {
       title: area.title,
       description: area.description,
     },
-  };
+  });
 }
 
 export default async function PracticeAreaDetailPage({ params }: Props) {
@@ -39,19 +61,25 @@ export default async function PracticeAreaDetailPage({ params }: Props) {
   const attorneys = ATTORNEYS.filter((a) => area.attorneySlugs.includes(a.slug));
   const relatedAreas = PRACTICE_AREAS.filter((a) => a.slug !== slug).slice(0, 5);
 
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "업무분야", href: "/practice-areas" },
+    { label: area.title },
+  ];
+
+  const serviceSchema = buildServiceSchema({
+    name: area.title,
+    description: area.description,
+  });
+
   return (
     <main>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <JsonLd data={serviceSchema} id="schema-service" />
       {/* Page Header Banner */}
       <section className="bg-primary flex flex-col justify-center min-h-[280px]">
         <div className="container-content py-12">
-          <Breadcrumb
-            items={[
-              { label: "홈", href: "/" },
-              { label: "업무분야", href: "/practice-areas" },
-              { label: area.title },
-            ]}
-            variant="dark"
-          />
+          <Breadcrumb items={breadcrumbItems} variant="dark" />
           <div className="mt-6 flex items-center gap-4">
             <div className="flex items-center justify-center w-14 h-14 bg-bg-white/10 rounded-card shrink-0">
               <Icon className="w-8 h-8 text-accent" aria-hidden />

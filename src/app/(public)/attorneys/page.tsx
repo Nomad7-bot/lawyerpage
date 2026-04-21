@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { buttonStyles } from "@/components/ui/Button";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
 import { ATTORNEYS, ATTORNEYS_DETAIL } from "@/constants/dummy";
 
-export const metadata: Metadata = {
-  title: "변호사 소개",
-  description:
-    "각 분야 최고의 전문가가 함께합니다. 법률사무소 전문 변호사 5명의 프로필을 확인하세요.",
-  openGraph: {
-    title: "변호사 소개",
-    description: "각 분야 최고의 전문가가 함께합니다.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    pageName: "attorneys",
+    path: "/attorneys",
+    fallback: {
+      title: "변호사 소개",
+      description:
+        "각 분야 최고의 전문가가 함께합니다. 법률사무소 전문 변호사 5명의 프로필을 확인하세요.",
+    },
+  });
+}
 
 const breadcrumbItems = [
   { label: "홈", href: "/" },
@@ -26,19 +29,11 @@ export default function AttorneysPage() {
 
   return (
     <main>
-      {/* Page Header Banner */}
-      <section className="bg-primary flex flex-col justify-center min-h-[320px]">
-        <div className="container-content py-12">
-          <Breadcrumb
-            items={breadcrumbItems}
-            variant="dark"
-          />
-          <h1 className="mt-6 text-h1 font-bold text-bg-white">변호사 소개</h1>
-          <p className="mt-3 text-body text-bg-white/70">
-            각 분야 최고의 전문가가 함께합니다.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        breadcrumbItems={breadcrumbItems}
+        title="변호사 소개"
+        subtitle="각 분야 최고의 전문가가 함께합니다."
+      />
 
       <section className="py-16 md:py-22 bg-bg-light">
         <div className="container-content space-y-8">

@@ -1,4 +1,5 @@
 import { SITE } from "@/constants/site";
+import { formatDateKo } from "@/lib/utils/date";
 
 /**
  * 이메일 HTML 템플릿 모음
@@ -32,14 +33,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function formatDateKo(isoDate: string): string {
-  // "2026-04-20" → "2026년 4월 20일 (월)"
-  const [y, m, d] = isoDate.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][dt.getDay()];
-  return `${y}년 ${m}월 ${d}일 (${weekday})`;
 }
 
 function formatTimeShort(time: string): string {

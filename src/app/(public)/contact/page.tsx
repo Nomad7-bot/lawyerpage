@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, Phone, Clock, Mail, Train, Bus, Car } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { buttonStyles } from "@/components/ui/Button";
+import { GoogleMap } from "@/components/map/GoogleMap";
+import { buildMetadata } from "@/lib/seo/buildMetadata";
 import { SITE } from "@/constants/site";
 
-export const metadata: Metadata = {
-  title: "오시는 길",
-  description: `${SITE.nap.name} 위치 안내. ${SITE.nap.address}. 전화: ${SITE.nap.phone}`,
-  openGraph: {
-    title: "오시는 길",
-    description: `${SITE.nap.name} 위치 및 연락처 안내.`,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildMetadata({
+    pageName: "contact",
+    path: "/contact",
+    fallback: {
+      title: "오시는 길",
+      description: `${SITE.nap.name} 위치 안내. ${SITE.nap.address}. 전화: ${SITE.nap.phone}`,
+    },
+  });
+}
 
 // 교통편 더미 데이터 (site.ts NAP 기준: 서초구 서초대로)
 const TRANSPORT = [
@@ -60,40 +64,26 @@ const HOURS = [
 
 export default function ContactPage() {
   const { nap } = SITE;
+  const breadcrumbItems = [
+    { label: "홈", href: "/" },
+    { label: "오시는 길" },
+  ];
 
   return (
     <main>
-      {/* Page Header Banner */}
-      <section className="bg-primary flex flex-col justify-center min-h-[320px]">
-        <div className="container-content py-12">
-          <Breadcrumb
-            items={[{ label: "홈", href: "/" }, { label: "오시는 길" }]}
-            variant="dark"
-          />
-          <h1 className="mt-6 text-h1 font-bold text-bg-white">오시는 길</h1>
-          <p className="mt-3 text-body text-bg-white/70">
-            {nap.address}
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        breadcrumbItems={breadcrumbItems}
+        title="오시는 길"
+        subtitle={nap.address}
+      />
 
       {/* 지도 섹션 */}
-      <section aria-label="지도">
-        {/* 지도 placeholder — API 키 연결 후 iframe으로 교체 */}
-        <div className="h-[480px] bg-primary/10 flex flex-col items-center justify-center gap-3">
-          <MapPin className="w-10 h-10 text-primary/30" aria-hidden />
-          <p className="text-body text-text-sub">
-            Google Maps (API 키 연결 후 활성화)
-          </p>
-          <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(nap.address)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-caption text-primary-light underline hover:text-primary transition-colors"
-          >
-            Google Maps에서 보기 ↗
-          </a>
-        </div>
+      <section aria-label="사무소 위치 지도">
+        <GoogleMap
+          title={`${nap.name} 위치 안내 지도`}
+          fallbackAddress={nap.address}
+          height={480}
+        />
 
         {/* 빠른 정보 바 */}
         <div className="bg-primary">
