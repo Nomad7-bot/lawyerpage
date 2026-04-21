@@ -34,6 +34,8 @@ type ImageUploaderProps = {
   /** 권장 크기/비율 안내 (예: "권장 400x500 (1:1.25)") */
   aspectHint?: string;
   disabled?: boolean;
+  /** 미리보기를 원형으로 렌더 (프로필 사진용) */
+  circular?: boolean;
 };
 
 /**
@@ -55,6 +57,7 @@ export function ImageUploader({
   label,
   aspectHint,
   disabled = false,
+  circular = false,
 }: ImageUploaderProps) {
   const defaults = BUCKET_DEFAULTS[bucket];
   const effectiveMaxSize = maxSize ?? defaults.maxSize;
@@ -266,23 +269,33 @@ export function ImageUploader({
       >
         {preview ? (
           <>
-            {/* 미리보기 이미지 */}
-            <div className="relative h-56 w-full overflow-hidden rounded-card">
+            {/* 미리보기 이미지 — circular 면 원형 1:1, 기본은 직사각 */}
+            <div
+              className={cn(
+                "relative overflow-hidden",
+                circular
+                  ? "h-40 w-40 rounded-full"
+                  : "h-56 w-full rounded-card"
+              )}
+            >
               {/* next/image 는 blob: URL 을 지원하지 않으므로 <img> 사용 */}
               {preview.startsWith("blob:") ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={preview}
                   alt="업로드 미리보기"
-                  className="h-full w-full object-contain"
+                  className={cn(
+                    "h-full w-full",
+                    circular ? "object-cover" : "object-contain"
+                  )}
                 />
               ) : (
                 <Image
                   src={preview}
                   alt="업로드 미리보기"
                   fill
-                  sizes="(max-width: 768px) 100vw, 400px"
-                  className="object-contain"
+                  sizes={circular ? "160px" : "(max-width: 768px) 100vw, 400px"}
+                  className={circular ? "object-cover" : "object-contain"}
                 />
               )}
             </div>
