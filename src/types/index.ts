@@ -76,3 +76,129 @@ export type ApiErrorResponse = {
   error: string;
   details?: Record<string, string[]>;
 };
+
+// 관리자 사용자 (useAuth 훅 반환 타입)
+export type AdminUser = {
+  id: string;
+  email: string | null;
+};
+
+// ─── 콘텐츠 관리 (Phase 3 STEP 6) ─────────────────────────
+
+// 게시글 단건 (에디터용)
+export type Post = {
+  id: string;
+  title: string;
+  slug: string;
+  category_id: string | null;
+  content: string;
+  excerpt: string | null;
+  thumbnail: string | null;
+  tags: string[];
+  author_id: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  view_count: number;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// 경력 항목 (attorneys.career JSONB 원소)
+export type CareerItem = {
+  year: string;
+  content: string;
+};
+
+// 변호사 상세 (에디터용)
+export type AttorneyFull = {
+  id: string;
+  name: string;
+  slug: string;
+  position: string | null;
+  profile_image: string | null;
+  bio: string | null;
+  career: CareerItem[];
+  display_order: number;
+  is_active: boolean;
+  practice_area_ids: string[];
+  available_slots: AvailableSlot[];
+  created_at: string;
+  updated_at: string;
+};
+
+// 가용 슬롯 — available_slots 행
+export type AvailableSlot = {
+  day_of_week: number; // 0=일 ~ 6=토
+  start_time: string; // "HH:MM:SS"
+  end_time: string; // "HH:MM:SS"
+  is_active: boolean;
+};
+
+// 업무분야 상세 (에디터용)
+export type PracticeAreaFull = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  detail_content: string | null;
+  icon_name: string | null;
+  display_order: number;
+  is_active: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// 게시글 카테고리
+export type PostCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  display_order: number;
+};
+
+// ─── SEO / 사이트 설정 (Phase 3 STEP 7) ────────────────────
+
+// seo_settings 테이블 행 — 페이지별 메타
+export type SeoSetting = {
+  id: string;
+  page_name: string;
+  page_url: string;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_title: string | null;
+  og_description: string | null;
+  og_image: string | null;
+  canonical_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// 영업시간 구조 — business_hours JSONB
+export type BusinessHours = {
+  weekday: string;
+  saturday: string;
+  sunday: string;
+  holiday: string;
+};
+
+// site_settings 테이블 행 (singleton)
+export type SiteSettings = {
+  id: string;
+  firm_name: string;
+  address: string | null;
+  phone: string | null;
+  fax: string | null;
+  email: string | null;
+  business_hours: BusinessHours | null;
+  default_title_template: string | null;
+  default_description: string | null;
+  default_og_image: string | null;
+  blog_url: string | null;
+  instagram_url: string | null;
+  updated_at: string;
+};

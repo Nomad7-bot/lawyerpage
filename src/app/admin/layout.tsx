@@ -1,6 +1,18 @@
+import { Suspense } from "react";
+
+import { AdminShell } from "@/components/admin/AdminShell";
+import { ToastProvider } from "@/components/admin/ToastProvider";
+
 /**
- * 관리자 레이아웃
- * Phase 3 에서 인증 가드(middleware) 및 사이드바 추가 예정
+ * 관리자 공통 레이아웃
+ *
+ * - Server Component 유지
+ * - 드로어 상태/URL 훅은 AdminShell(Client) 에서 담당
+ * - useSearchParams(사이드바 active 판정 용) 는 Next.js 15 에서
+ *   Suspense 경계 내부에서 사용해야 정적 prerender 경고 없음
+ * - `/admin/login` 페이지는 자체 `fixed inset-0 z-50` 으로 이 레이아웃을 덮음
+ * - 인증 가드는 src/middleware.ts 가 담당 (이 레이아웃에서 별도 처리 불요)
+ * - ToastProvider: 예약 상태 변경 등 관리자 액션 피드백 공용 토스트
  */
 export default function AdminLayout({
   children,
@@ -8,13 +20,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-bg-light">
-      <header className="bg-primary text-bg-white border-b border-primary-light">
-        <div className="container-content flex h-16 items-center">
-          <span className="text-h4 font-bold">법률사무소 관리자</span>
-        </div>
-      </header>
-      <main className="container-content py-8">{children}</main>
-    </div>
+    <ToastProvider>
+      <Suspense fallback={null}>
+        <AdminShell>{children}</AdminShell>
+      </Suspense>
+    </ToastProvider>
   );
 }

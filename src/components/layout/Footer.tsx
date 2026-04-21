@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Phone, Mail, MapPin, Clock, ChevronDown } from "lucide-react";
-import { SITE, GNB_MENU } from "@/constants/site";
+import { GNB_MENU } from "@/constants/site";
+import type { ResolvedSiteInfo } from "@/lib/site-info";
 import { cn } from "@/lib/utils/cn";
 
 // 푸터 빠른 링크 (GNB 서브셋)
@@ -15,7 +16,11 @@ const QUICK_LINKS = GNB_MENU.filter((item) =>
 
 type AccordionId = "links" | "contact" | "hours";
 
-export function Footer() {
+type FooterProps = {
+  site: ResolvedSiteInfo;
+};
+
+export function Footer({ site }: FooterProps) {
   const [openId, setOpenId] = useState<AccordionId | null>(null);
   const year = new Date().getFullYear();
 
@@ -31,10 +36,10 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="h-6 w-0.5 bg-accent" aria-hidden />
-              <span className="text-h4 font-bold text-white">{SITE.name}</span>
+              <span className="text-h4 font-bold text-white">{site.name}</span>
             </div>
             <p className="text-caption text-white/70 leading-relaxed">
-              {SITE.description}
+              {site.description}
             </p>
           </div>
 
@@ -68,15 +73,15 @@ export function Footer() {
                   className="h-4 w-4 mt-0.5 shrink-0 text-accent"
                   aria-hidden
                 />
-                <span className="leading-relaxed">{SITE.nap.address}</span>
+                <span className="leading-relaxed">{site.address}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0 text-accent" aria-hidden />
                 <a
-                  href={`tel:${SITE.nap.phone}`}
+                  href={`tel:${site.phone}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.phoneDisplay}
+                  {site.phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
@@ -87,19 +92,19 @@ export function Footer() {
                   FAX
                 </span>
                 <a
-                  href={`tel:${SITE.nap.fax}`}
+                  href={`tel:${site.fax}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.fax}
+                  {site.fax}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-accent" aria-hidden />
                 <a
-                  href={`mailto:${SITE.nap.email}`}
+                  href={`mailto:${site.email}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.email}
+                  {site.email}
                 </a>
               </div>
             </address>
@@ -118,15 +123,15 @@ export function Footer() {
               <div className="space-y-2">
                 <div>
                   <p className="text-white/50 text-[12px]">평일</p>
-                  <p className="text-white/75">{SITE.businessHours.weekday}</p>
+                  <p className="text-white/75">{site.hoursWeekday}</p>
                 </div>
                 <div>
                   <p className="text-white/50 text-[12px]">토요일</p>
-                  <p className="text-white/75">{SITE.businessHours.saturday}</p>
+                  <p className="text-white/75">{site.hoursSaturday}</p>
                 </div>
                 <div>
                   <p className="text-white/50 text-[12px]">일요일·공휴일</p>
-                  <p className="text-white/75">{SITE.businessHours.sunday}</p>
+                  <p className="text-white/75">{site.hoursSunday}</p>
                 </div>
               </div>
             </div>
@@ -139,10 +144,10 @@ export function Footer() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <span className="h-6 w-0.5 bg-accent" aria-hidden />
-              <span className="text-h4 font-bold text-white">{SITE.name}</span>
+              <span className="text-h4 font-bold text-white">{site.name}</span>
             </div>
             <p className="text-caption text-white/70 leading-relaxed">
-              {SITE.description}
+              {site.description}
             </p>
           </div>
 
@@ -175,32 +180,32 @@ export function Footer() {
             onToggle={() => toggle("contact")}
           >
             <address className="not-italic space-y-2.5 text-caption text-white/75 pb-5">
-              <p className="leading-relaxed">{SITE.nap.address}</p>
+              <p className="leading-relaxed">{site.address}</p>
               <p>
                 Tel.{" "}
                 <a
-                  href={`tel:${SITE.nap.phone}`}
+                  href={`tel:${site.phone}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.phoneDisplay}
+                  {site.phoneDisplay}
                 </a>
               </p>
               <p>
                 Fax.{" "}
                 <a
-                  href={`tel:${SITE.nap.fax}`}
+                  href={`tel:${site.fax}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.fax}
+                  {site.fax}
                 </a>
               </p>
               <p>
                 Email.{" "}
                 <a
-                  href={`mailto:${SITE.nap.email}`}
+                  href={`mailto:${site.email}`}
                   className="hover:text-accent transition-colors"
                 >
-                  {SITE.nap.email}
+                  {site.email}
                 </a>
               </p>
             </address>
@@ -216,15 +221,15 @@ export function Footer() {
             <dl className="space-y-2 text-caption text-white/75 pb-5">
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">평일</dt>
-                <dd>{SITE.businessHours.weekday}</dd>
+                <dd>{site.hoursWeekday}</dd>
               </div>
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">토요일</dt>
-                <dd>{SITE.businessHours.saturday}</dd>
+                <dd>{site.hoursSaturday}</dd>
               </div>
               <div className="flex gap-6">
                 <dt className="w-20 text-white/50">일/공휴일</dt>
-                <dd>{SITE.businessHours.sunday}</dd>
+                <dd>{site.hoursSunday}</dd>
               </div>
             </dl>
           </AccordionItem>
@@ -233,7 +238,7 @@ export function Footer() {
         {/* ── 하단 바 ── */}
         <div className="mt-8 md:mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-white/50">
           <p>
-            © {year} {SITE.name}. All rights reserved.
+            © {year} {site.name}. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link
